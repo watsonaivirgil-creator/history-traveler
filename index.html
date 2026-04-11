@@ -43,29 +43,34 @@
 
         document.head.appendChild(script);
 
-        function startEngine() {
+       function startEngine() {
     try {
         const viewer = new Cesium.Viewer('map-container', {
-            // This provider is the most reliable for 'instant' world viewing
-            imageryProvider: new Cesium.IonImageryProvider({ assetId: 3 }), 
+            // Using a standard OpenStreetMap layer to bypass 'Ion' authentication issues
+            imageryProvider: new Cesium.UrlTemplateImageryProvider({
+                url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                subdomains: ['a', 'b', 'c'],
+                maximumLevel: 19
+            }),
             baseLayerPicker: false,
             geocoder: false,
             timeline: false,
-            animation: false
+            animation: false,
+            terrainProvider: new Cesium.EllipsoidTerrainProvider()
         });
 
-        // Set the initial view to see the whole Earth
+        // Center the view on a historic landmark: The Great Pyramid
         viewer.camera.setView({
-            destination: Cesium.Cartesian3.fromDegrees(0.0, 0.0, 20000000.0)
+            destination: Cesium.Cartesian3.fromDegrees(31.1342, 29.9792, 5000.0)
         });
 
         status.innerText = "SATELLITE LINK ESTABLISHED";
         setTimeout(() => {
-            document.getElementById('status-overlay').style.opacity = '0';
+            document.getElementById('status-overlay').style.display = 'none';
         }, 2000);
 
     } catch (e) {
-        status.innerHTML = "Imagery Error: " + e.message;
+        status.innerHTML = "<span style='color:red;'>Link Error: " + e.message + "</span>";
     }
 }
 
