@@ -11,37 +11,31 @@
     <style>
         body, html { margin: 0; padding: 0; height: 100%; background: #000; overflow: hidden; color: gold; font-family: 'serif'; }
         #map-container { width: 100vw; height: 100vh; background: #111; }
-        
         #chat-sidebar {
-            position: absolute; top: 0; right: -400px; 
-            width: 350px; height: 100%; background: rgba(10, 10, 10, 0.95);
-            border-left: 2px solid #D4AF37; z-index: 1000;
+            position: absolute; top: 0; right: -400px; width: 350px; height: 100%; 
+            background: rgba(10, 10, 10, 0.95); border-left: 2px solid #D4AF37; z-index: 1000;
             transition: right 0.5s ease; display: flex; flex-direction: column;
-            box-shadow: -5px 0 15px rgba(0,0,0,0.5);
         }
-
         #chat-header { padding: 20px; border-bottom: 1px solid #D4AF37; background: #1a1a1a; font-weight: bold; }
         #chat-messages { flex-grow: 1; padding: 20px; overflow-y: auto; font-style: italic; line-height: 1.6; }
         #chat-input-area { padding: 20px; border-top: 1px solid #333; display: flex; }
-        
         input { background: #000; border: 1px solid #D4AF37; color: gold; padding: 10px; flex-grow: 1; outline: none; }
         button#send-btn { background: #D4AF37; color: black; border: none; padding: 10px 15px; cursor: pointer; font-weight: bold; }
-        
-        #status-overlay { position: absolute; top: 20px; left: 20px; z-index: 100; background: rgba(0,0,0,0.8); padding: 10px; border: 1px solid #D4AF37; border-radius: 4px; }
+        #status-overlay { position: absolute; top: 20px; left: 20px; z-index: 100; background: rgba(0,0,0,0.8); padding: 10px; border: 1px solid #D4AF37; }
     </style>
 </head>
 <body>
 
-    <div id="status-overlay"><strong>SYSTEM:</strong> <span id="status-text">UPLINKING 3D MESH...</span></div>
+    <div id="status-overlay"><strong>SYSTEM:</strong> <span id="status-text">ENGAGING GPU OPTIMIZATION...</span></div>
     
     <div id="chat-sidebar">
         <div id="chat-header">CHRONO-LINK: <span id="location-name">Unknown</span></div>
-        <div id="chat-messages"><p>Select a gold Chrono-Point to begin the dialogue.</p></div>
+        <div id="chat-messages"><p>Select a Chrono-Point to begin.</p></div>
         <div id="chat-input-area">
             <input type="text" id="user-input" placeholder="Ask the past...">
             <button id="send-btn">SEND</button>
         </div>
-        <button onclick="closeSidebar()" style="background:none; color:grey; border:none; padding:10px; cursor:pointer;">[ Disconnect Link ]</button>
+        <button onclick="closeSidebar()" style="background:none; color:grey; border:none; padding:10px; cursor:pointer;">[ Close Link ]</button>
     </div>
 
     <div id="map-container"></div>
@@ -51,40 +45,38 @@
         let currentSiteKey = "";
 
         const historyData = {
-            "Giza": { name: "Great Pyramid of Giza", lat: 31.1342, lon: 29.9792, fact: "The last surviving original World Wonder." },
-            "Rome": { name: "The Colosseum", lat: 12.4922, lon: 41.8902, fact: "The largest amphitheatre built in antiquity." },
-            "Athens": { name: "The Parthenon", lat: 23.7285, lon: 37.9715, fact: "A symbol of ancient Greek democracy and art." }
+            "Giza": { name: "Great Pyramid of Giza", lat: 31.1342, lon: 29.9792, fact: "The last of the Seven Wonders of the Ancient World." },
+            "Rome": { name: "The Colosseum", lat: 12.4922, lon: 41.8902, fact: "The icon of Rome's architectural legacy." },
+            "Athens": { name: "The Parthenon", lat: 23.7285, lon: 37.9715, fact: "The peak of classical Greek sculpture and architecture." }
         };
 
         async function startEngine() {
             try {
-                // Initialize the globe with Terrain
+                // Initialize without terrain to save GPU memory
                 viewer = new Cesium.Viewer('map-container', {
-                    terrainProvider: await Cesium.createWorldTerrainAsync(),
                     imageryProvider: new Cesium.UrlTemplateImageryProvider({
                         url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
                         subdomains: ['a', 'b', 'c']
                     }),
                     baseLayerPicker: false, geocoder: false, timeline: false, animation: false,
-                    infoBox: false, selectionIndicator: false
+                    requestRenderMode: true // Only renders when camera moves, massive battery/GPU saver
                 });
 
-                // Add 3D Buildings - The "OSM Buildings" layer
-                const osmBuildings = await Cesium.createOsmBuildingsAsync();
-                viewer.scene.primitives.add(osmBuildings);
+                // Attempt to load 3D buildings with a simplified mesh
+                const buildings = await Cesium.createOsmBuildingsAsync();
+                viewer.scene.primitives.add(buildings);
 
-                // Add Chrono-Points
+                // Populate markers
                 Object.keys(historyData).forEach(key => {
                     const site = historyData[key];
                     viewer.entities.add({
                         id: key,
-                        position: Cesium.Cartesian3.fromDegrees(site.lat, site.lon, 100),
+                        position: Cesium.Cartesian3.fromDegrees(site.lat, site.lon, 0),
                         label: { text: site.name, font: '12pt serif', fillColor: Cesium.Color.GOLD, pixelOffset: new Cesium.Cartesian2(0, -40) },
-                        point: { pixelSize: 10, color: Cesium.Color.GOLD, outlineColor: Cesium.Color.BLACK, outlineWidth: 2 }
+                        point: { pixelSize: 10, color: Cesium.Color.GOLD }
                     });
                 });
 
-                // Click event logic
                 viewer.screenSpaceEventHandler.setInputAction(function(movement) {
                     const picked = viewer.scene.pick(movement.position);
                     if (picked && picked.id && historyData[picked.id.id]) {
@@ -92,25 +84,19 @@
                         currentSiteKey = picked.id.id;
                         openSidebar(site.name, site.fact);
                         
-                        // Fly to with a significant tilt to force 3D rendering
                         viewer.camera.flyTo({
-                            destination: Cesium.Cartesian3.fromDegrees(site.lat, site.lon, 800),
-                            orientation: {
-                                pitch: Cesium.Math.toRadians(-25.0),
-                                heading: 0.0
-                            }
+                            destination: Cesium.Cartesian3.fromDegrees(site.lat, site.lon, 600),
+                            orientation: { pitch: Cesium.Math.toRadians(-20.0) } // Reduced tilt for better performance
                         });
                     }
                 }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 
-                document.getElementById('status-text').innerText = "3D UPLINK ACTIVE";
+                document.getElementById('status-text').innerText = "GPU OPTIMIZED - LINK READY";
                 setTimeout(() => document.getElementById('status-overlay').style.display='none', 2000);
-                
-                initChat();
+                initChatLogic();
 
             } catch (e) {
-                document.getElementById('status-text').innerText = "GPU ERROR: 3D LIMITED";
-                console.error(e);
+                document.getElementById('status-text').innerText = "CRITICAL: " + e.message;
             }
         }
 
@@ -122,7 +108,7 @@
 
         function closeSidebar() { document.getElementById('chat-sidebar').style.right = "-400px"; }
 
-        function initChat() {
+        function initChatLogic() {
             document.getElementById('send-btn').onclick = sendMessage;
             document.getElementById('user-input').onkeypress = (e) => { if(e.key === 'Enter') sendMessage(); };
         }
@@ -133,7 +119,7 @@
             if (input.value.trim() !== "") {
                 messages.innerHTML += `<p style="color:white; font-style:normal;"><strong>You:</strong> ${input.value}</p>`;
                 setTimeout(() => {
-                    messages.innerHTML += `<p><strong>Guide:</strong> In the time of ${currentSiteKey}, this monument stood as a testament to the heights of human ambition.</p>`;
+                    messages.innerHTML += `<p><strong>Guide:</strong> In the age of ${currentSiteKey}, beauty was found in geometry and stone.</p>`;
                     messages.scrollTop = messages.scrollHeight;
                 }, 800);
                 input.value = "";
