@@ -5,37 +5,43 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>History Traveler</title>
     
-    <script src="https://unpkg.com/cesium@1.105.1/Build/Cesium/Cesium.js"></script>
-    <link href="https://unpkg.com/cesium@1.105.1/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+    <script src="https://cesium.com/downloads/cesiumjs/releases/1.105/Build/Cesium/Cesium.js"></script>
+    <link href="https://cesium.com/downloads/cesiumjs/releases/1.105/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
     
     <style>
         body, html { margin: 0; padding: 0; height: 100%; background: #000; overflow: hidden; color: gold; font-family: 'serif'; }
         #map-container { width: 100vw; height: 100vh; background: #111; }
+        
         #chat-sidebar {
-            position: absolute; top: 0; right: -400px; width: 350px; height: 100%; 
-            background: rgba(10, 10, 10, 0.95); border-left: 2px solid #D4AF37; z-index: 1000;
+            position: absolute; top: 0; right: -400px; 
+            width: 350px; height: 100%; background: rgba(10, 10, 10, 0.95);
+            border-left: 2px solid #D4AF37; z-index: 1000;
             transition: right 0.5s ease; display: flex; flex-direction: column;
+            box-shadow: -5px 0 15px rgba(0,0,0,0.5);
         }
+
         #chat-header { padding: 20px; border-bottom: 1px solid #D4AF37; background: #1a1a1a; font-weight: bold; }
         #chat-messages { flex-grow: 1; padding: 20px; overflow-y: auto; font-style: italic; line-height: 1.6; }
         #chat-input-area { padding: 20px; border-top: 1px solid #333; display: flex; }
+        
         input { background: #000; border: 1px solid #D4AF37; color: gold; padding: 10px; flex-grow: 1; outline: none; }
         button#send-btn { background: #D4AF37; color: black; border: none; padding: 10px 15px; cursor: pointer; font-weight: bold; }
-        #status-overlay { position: absolute; top: 20px; left: 20px; z-index: 100; background: rgba(0,0,0,0.8); padding: 10px; border: 1px solid #D4AF37; }
+        
+        #status-overlay { position: absolute; top: 20px; left: 20px; z-index: 100; background: rgba(0,0,0,0.8); padding: 10px; border: 1px solid #D4AF37; border-radius: 4px; }
     </style>
 </head>
 <body>
 
-    <div id="status-overlay"><strong>SYSTEM:</strong> <span id="status-text">ENGAGING 3D RENDERER...</span></div>
+    <div id="status-overlay"><strong>SYSTEM:</strong> <span id="status-text">INITIALIZING 3D LINK...</span></div>
     
     <div id="chat-sidebar">
         <div id="chat-header">CHRONO-LINK: <span id="location-name">Unknown</span></div>
-        <div id="chat-messages"><p>Select a Chrono-Point to begin.</p></div>
+        <div id="chat-messages"><p>Select a Chrono-Point to begin the dialogue.</p></div>
         <div id="chat-input-area">
             <input type="text" id="user-input" placeholder="Ask the past...">
             <button id="send-btn">SEND</button>
         </div>
-        <button onclick="closeSidebar()" style="background:none; color:grey; border:none; padding:10px; cursor:pointer;">[ Close Link ]</button>
+        <button onclick="closeSidebar()" style="background:none; color:grey; border:none; padding:10px; cursor:pointer;">[ Disconnect Link ]</button>
     </div>
 
     <div id="map-container"></div>
@@ -45,20 +51,20 @@
         let currentSiteKey = "";
 
         const historyData = {
-            "Giza": { name: "Great Pyramid of Giza", lat: 31.1342, lon: 29.9792, fact: "The last of the ancient Seven Wonders still in existence." },
-            "Rome": { name: "The Colosseum", lat: 12.4922, lon: 41.8902, fact: "The largest ancient amphitheatre ever built." },
-            "Athens": { name: "The Parthenon", lat: 23.7285, lon: 37.9715, fact: "The zenith of the Doric order in Greek architecture." }
+            "Giza": { name: "Great Pyramid of Giza", lat: 31.1342, lon: 29.9792, fact: "Built c. 2560 BCE, it is the only surviving Ancient Wonder." },
+            "Rome": { name: "The Colosseum", lat: 12.4922, lon: 41.8902, fact: "Commissioned in 72 AD, the symbol of Roman might." },
+            "Athens": { name: "The Parthenon", lat: 23.7285, lon: 37.9715, fact: "Completed in 438 BCE to honor Athena Parthenos." }
         };
 
-        async function startEngine() {
+        function startEngine() {
             try {
+                // Check if library loaded
                 if (typeof Cesium === 'undefined') {
-                    throw new Error("Cesium Library not detected.");
+                    document.getElementById('status-text').innerText = "FATAL: Library Missing";
+                    return;
                 }
 
-                // Initialize with World Terrain
                 viewer = new Cesium.Viewer('map-container', {
-                    terrainProvider: await Cesium.createWorldTerrainAsync(),
                     imageryProvider: new Cesium.UrlTemplateImageryProvider({
                         url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
                         subdomains: ['a', 'b', 'c']
@@ -66,22 +72,21 @@
                     baseLayerPicker: false, geocoder: false, timeline: false, animation: false
                 });
 
-                // Load 3D Buildings
-                const buildings = await Cesium.createOsmBuildingsAsync();
-                viewer.scene.primitives.add(buildings);
+                // Add 3D OSM Buildings (Safely)
+                viewer.scene.primitives.add(Cesium.createOsmBuildings());
 
-                // Add Chrono-Points
+                // Add markers
                 Object.keys(historyData).forEach(key => {
                     const site = historyData[key];
                     viewer.entities.add({
                         id: key,
-                        position: Cesium.Cartesian3.fromDegrees(site.lat, site.lon, 150),
+                        position: Cesium.Cartesian3.fromDegrees(site.lat, site.lon, 100),
                         label: { text: site.name, font: '12pt serif', fillColor: Cesium.Color.GOLD, pixelOffset: new Cesium.Cartesian2(0, -40) },
-                        point: { pixelSize: 10, color: Cesium.Color.GOLD }
+                        point: { pixelSize: 10, color: Cesium.Color.GOLD, outlineColor: Cesium.Color.BLACK, outlineWidth: 2 }
                     });
                 });
 
-                // Click Logic
+                // Mouse interaction
                 viewer.screenSpaceEventHandler.setInputAction(function(movement) {
                     const picked = viewer.scene.pick(movement.position);
                     if (picked && picked.id && historyData[picked.id.id]) {
@@ -89,22 +94,21 @@
                         currentSiteKey = picked.id.id;
                         openSidebar(site.name, site.fact);
                         
-                        // Fly to with Tilt (Pitch) for 3D View
+                        // FlyTo with 3D tilt
                         viewer.camera.flyTo({
-                            destination: Cesium.Cartesian3.fromDegrees(site.lat, site.lon, 800),
-                            orientation: {
-                                pitch: Cesium.Math.toRadians(-35.0)
-                            }
+                            destination: Cesium.Cartesian3.fromDegrees(site.lat, site.lon, 1000),
+                            orientation: { pitch: Cesium.Math.toRadians(-30.0) }
                         });
                     }
                 }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 
-                document.getElementById('status-text').innerText = "3D MESH COMPLETE";
+                document.getElementById('status-text').innerText = "3D UPLINK ESTABLISHED";
                 setTimeout(() => document.getElementById('status-overlay').style.display='none', 2000);
-                initChatLogic();
+                
+                initChatHandlers();
 
-            } catch (e) { 
-                document.getElementById('status-text').innerText = "FATAL ERROR: " + e.message;
+            } catch (e) {
+                document.getElementById('status-text').innerText = "ERROR: " + e.message;
                 console.error(e);
             }
         }
@@ -117,25 +121,28 @@
 
         function closeSidebar() { document.getElementById('chat-sidebar').style.right = "-400px"; }
 
-        function initChatLogic() {
-            document.getElementById('send-btn').onclick = sendMessage;
-            document.getElementById('user-input').onkeypress = (e) => { if(e.key === 'Enter') sendMessage(); };
+        function initChatHandlers() {
+            const sendBtn = document.getElementById('send-btn');
+            const input = document.getElementById('user-input');
+
+            sendBtn.onclick = sendMessage;
+            input.onkeypress = (e) => { if(e.key === 'Enter') sendMessage(); };
         }
 
         function sendMessage() {
             const input = document.getElementById('user-input');
-            const messages = document.getElementById('chat-messages');
+            const chatBox = document.getElementById('chat-messages');
             if (input.value.trim() !== "") {
-                messages.innerHTML += `<p style="color:white; font-style:normal;"><strong>You:</strong> ${input.value}</p>`;
+                chatBox.innerHTML += `<p style="color:white; font-style:normal;"><strong>You:</strong> ${input.value}</p>`;
                 setTimeout(() => {
-                    messages.innerHTML += `<p><strong>Guide:</strong> The history of ${currentSiteKey} is etched in every stone here.</p>`;
-                    messages.scrollTop = messages.scrollHeight;
+                    chatBox.innerHTML += `<p><strong>Guide:</strong> The legacy of ${currentSiteKey} remains strong. What else do you wish to know?</p>`;
+                    chatBox.scrollTop = chatBox.scrollHeight;
                 }, 800);
                 input.value = "";
             }
         }
 
-        // Start when the page is fully ready
+        // Wait for window load
         window.onload = startEngine;
     </script>
 </body>
