@@ -4,7 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>History Traveler</title>
+    
+    <script src="https://unpkg.com/cesium@1.105.1/Build/Cesium/Cesium.js"></script>
     <link href="https://unpkg.com/cesium@1.105.1/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+    
     <style>
         body, html { margin: 0; padding: 0; height: 100%; background: #000; overflow: hidden; color: gold; font-family: 'serif'; }
         #map-container { width: 100vw; height: 100vh; background: #111; }
@@ -49,7 +52,11 @@
 
         async function startEngine() {
             try {
-                // Initialize the viewer with World Terrain enabled
+                if (typeof Cesium === 'undefined') {
+                    throw new Error("Cesium Library not detected.");
+                }
+
+                // Initialize with World Terrain
                 viewer = new Cesium.Viewer('map-container', {
                     terrainProvider: await Cesium.createWorldTerrainAsync(),
                     imageryProvider: new Cesium.UrlTemplateImageryProvider({
@@ -59,11 +66,11 @@
                     baseLayerPicker: false, geocoder: false, timeline: false, animation: false
                 });
 
-                // ADD 3D BUILDINGS LAYER
+                // Load 3D Buildings
                 const buildings = await Cesium.createOsmBuildingsAsync();
                 viewer.scene.primitives.add(buildings);
 
-                // Populate markers
+                // Add Chrono-Points
                 Object.keys(historyData).forEach(key => {
                     const site = historyData[key];
                     viewer.entities.add({
@@ -74,18 +81,19 @@
                     });
                 });
 
+                // Click Logic
                 viewer.screenSpaceEventHandler.setInputAction(function(movement) {
                     const picked = viewer.scene.pick(movement.position);
-                    if (Cesium.defined(picked) && historyData[picked.id.id]) {
+                    if (picked && picked.id && historyData[picked.id.id]) {
                         const site = historyData[picked.id.id];
                         currentSiteKey = picked.id.id;
                         openSidebar(site.name, site.fact);
                         
-                        // Tilt the camera for a better 3D perspective
+                        // Fly to with Tilt (Pitch) for 3D View
                         viewer.camera.flyTo({
                             destination: Cesium.Cartesian3.fromDegrees(site.lat, site.lon, 800),
                             orientation: {
-                                pitch: Cesium.Math.toRadians(-35.0) // Looking down at an angle
+                                pitch: Cesium.Math.toRadians(-35.0)
                             }
                         });
                     }
@@ -95,7 +103,10 @@
                 setTimeout(() => document.getElementById('status-overlay').style.display='none', 2000);
                 initChatLogic();
 
-            } catch (e) { document.getElementById('status-text').innerText = "3D ERR: " + e.message; }
+            } catch (e) { 
+                document.getElementById('status-text').innerText = "FATAL ERROR: " + e.message;
+                console.error(e);
+            }
         }
 
         function openSidebar(name, fact) {
@@ -117,17 +128,15 @@
             if (input.value.trim() !== "") {
                 messages.innerHTML += `<p style="color:white; font-style:normal;"><strong>You:</strong> ${input.value}</p>`;
                 setTimeout(() => {
-                    messages.innerHTML += `<p><strong>Guide:</strong> The architecture here in ${currentSiteKey} was designed to echo through eternity.</p>`;
+                    messages.innerHTML += `<p><strong>Guide:</strong> The history of ${currentSiteKey} is etched in every stone here.</p>`;
                     messages.scrollTop = messages.scrollHeight;
                 }, 800);
                 input.value = "";
             }
         }
 
-        const script = document.createElement('script');
-        script.src = "https://unpkg.com/cesium@1.105.1/Build/Cesium/Cesium.js";
-        script.onload = () => setTimeout(startEngine, 1000);
-        document.head.appendChild(script);
+        // Start when the page is fully ready
+        window.onload = startEngine;
     </script>
 </body>
 </html>
