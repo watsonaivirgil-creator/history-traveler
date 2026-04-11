@@ -8,10 +8,33 @@
     <link href="https://cesium.com/downloads/cesiumjs/releases/1.110/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
     <script src="https://cesium.com/downloads/cesiumjs/releases/1.110/Build/Cesium/Cesium.js"></script>
     <style>
-        body, html { margin: 0; padding: 0; height: 100%; width: 100%; background: #000; overflow: hidden; }
-        #map-container { height: 100vh; width: 100vw; }
-        .ui-overlay { position: absolute; top: 20px; left: 20px; z-index: 10; pointer-events: none; color: #D4AF37; font-family: 'Times New Roman', serif; }
-    </style>
+    /* Force the app to fill the entire screen and remove scrollbars */
+    html, body { 
+        margin: 0; 
+        padding: 0; 
+        width: 100%; 
+        height: 100%; 
+        overflow: hidden; 
+        background-color: #000; 
+    }
+    
+    /* Ensure the container is truly 100% of the viewable area */
+    #map-container { 
+        width: 100vw; 
+        height: 100dvh; /* 'dvh' is better for mobile/Chromebook chrome */
+        display: block;
+    }
+
+    .ui-overlay { 
+        position: absolute; 
+        top: 20px; 
+        left: 20px; 
+        z-index: 1000; /* Put this high above the map */
+        pointer-events: none; 
+        color: #D4AF37; 
+        font-family: 'Times New Roman', serif; 
+    }
+</style>
 </head>
 <body>
     <div class="ui-overlay">
