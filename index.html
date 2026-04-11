@@ -8,19 +8,22 @@
     <link href="https://unpkg.com/cesium@1.105.1/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
     
     <style>
-        body, html { margin: 0; padding: 0; height: 100%; background: #000; overflow: hidden; color: gold; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body, html { margin: 0; padding: 0; height: 100%; background: #000; overflow: hidden; color: gold; font-family: 'serif'; }
         #map-container { width: 100vw; height: 100vh; background: #111; }
         #status-overlay { 
             position: absolute; top: 20px; left: 20px; z-index: 100; 
             background: rgba(0,0,0,0.85); padding: 15px; border: 1px solid #D4AF37;
             border-radius: 4px; box-shadow: 0 0 15px rgba(212, 175, 55, 0.3);
+            pointer-events: none;
         }
+        /* Style for the popup info box */
+        .cesium-infoBox { background: rgba(0,0,0,0.9); border: 1px solid #D4AF37; }
     </style>
 </head>
 <body>
 
     <div id="status-overlay">
-        <strong>SYSTEM:</strong> <span id="status-text">CONNECTING TO SATELLITE...</span>
+        <strong>SYSTEM:</strong> <span id="status-text">INITIALIZING CHRONO-LINK...</span>
     </div>
     
     <div id="map-container"></div>
@@ -28,7 +31,7 @@
     <script>
         const status = document.getElementById('status-text');
 
-        // 1. ENGINE DEFINITION
+        // 1. THE ENGINE ENGINE
         function startEngine() {
             try {
                 const viewer = new Cesium.Viewer('map-container', {
@@ -40,46 +43,64 @@
                     geocoder: false,
                     timeline: false,
                     animation: false,
-                    infoBox: false,
-                    selectionIndicator: false
+                    sceneModePicker: true,
+                    navigationHelpButton: false
                 });
 
-                // Fly to the Great Pyramid of Giza
-                viewer.camera.flyTo({
-                    destination: Cesium.Cartesian3.fromDegrees(31.1342, 29.9792, 5000.0),
-                    duration: 2
+                // 2. ADD HISTORICAL MARKER: THE GREAT PYRAMID
+                const pyramidPoint = viewer.entities.add({
+                    name: "The Great Pyramid of Giza",
+                    position: Cesium.Cartesian3.fromDegrees(31.1342, 29.9792, 146.0),
+                    billboard: {
+                        image: 'https://img.icons8.com/color/48/000000/pyramids.png',
+                        verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+                    },
+                    label: {
+                        text: 'The Great Pyramid (c. 2560 BCE)',
+                        font: '14pt serif',
+                        fillColor: Cesium.Color.GOLD,
+                        outlineColor: Cesium.Color.BLACK,
+                        outlineWidth: 3,
+                        style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+                        pixelOffset: new Cesium.Cartesian2(0, -50)
+                    },
+                    description: `
+                        <div style="padding: 10px; color: gold;">
+                            <p>Built for the Pharaoh Khufu, this was the tallest man-made structure in the world for over 3,800 years.</p>
+                            <hr>
+                            <p><i>Click to initiate Socratic Dialogue...</i></p>
+                        </div>
+                    `
                 });
+
+                // 3. LAUNCH VIEW
+                viewer.zoomTo(pyramidPoint);
 
                 status.innerText = "SATELLITE LINK ESTABLISHED";
                 
-                // Keep the success message visible for a moment then hide
                 setTimeout(() => {
-                    document.getElementById('status-overlay').style.transition = "opacity 1s";
+                    document.getElementById('status-overlay').style.transition = "opacity 1.5s";
                     document.getElementById('status-overlay').style.opacity = "0";
-                    setTimeout(() => {
-                        document.getElementById('status-overlay').style.display = "none";
-                    }, 1000);
                 }, 3000);
 
             } catch (e) {
                 status.innerHTML = "<span style='color:red;'>LINK ERROR: " + e.message + "</span>";
-                console.error("Cesium Initialization Failed:", e);
+                console.error("Initialization Failed:", e);
             }
         }
 
-        // 2. LIBRARY LOADING LOGIC
+        // 3. LOAD LIBRARY DYNAMICALLY
         const script = document.createElement('script');
         script.src = "https://unpkg.com/cesium@1.105.1/Build/Cesium/Cesium.js";
         script.async = false;
 
         script.onload = function() {
-            status.innerText = "LIBRARY LOADED. HANDSHAKING...";
-            // Brief pause to ensure the 'Cesium' object is ready in the browser's memory
-            setTimeout(startEngine, 800);
+            status.innerText = "COORDINATES SECURED. LOADING MAP...";
+            setTimeout(startEngine, 1000);
         };
 
         script.onerror = function() {
-            status.innerText = "CONNECTION FAILED. CHECK NETWORK.";
+            status.innerText = "NETWORK FAILURE.";
         };
 
         document.head.appendChild(script);
