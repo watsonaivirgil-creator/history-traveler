@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>History Traveler</title>
+    <title>History Traveler - Stable</title>
     
     <link href="https://cesium.com/downloads/cesiumjs/releases/1.105/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
     <script src="https://cesium.com/downloads/cesiumjs/releases/1.105/Build/Cesium/Cesium.js"></script>
@@ -11,17 +11,23 @@
     <style>
         body, html { margin: 0; padding: 0; height: 100%; background: #000; overflow: hidden; color: gold; font-family: 'serif'; }
         #map-container { width: 100vw; height: 100vh; background: #111; }
+        
         #chat-sidebar {
-            position: absolute; top: 0; right: -400px; width: 320px; height: 100%; 
-            background: rgba(15, 15, 15, 0.98); border-left: 2px solid #D4AF37; z-index: 1000;
+            position: absolute; top: 0; right: -400px; 
+            width: 320px; height: 100%; background: rgba(15, 15, 15, 0.98);
+            border-left: 2px solid #D4AF37; z-index: 1000;
             transition: right 0.5s ease; display: flex; flex-direction: column;
+            box-shadow: -5px 0 15px rgba(0,0,0,0.5);
         }
+
         #chat-header { padding: 15px; border-bottom: 1px solid #D4AF37; background: #1a1a1a; font-weight: bold; }
         #chat-messages { flex-grow: 1; padding: 15px; overflow-y: auto; font-style: italic; font-size: 0.9em; }
         #chat-input-area { padding: 15px; border-top: 1px solid #333; display: flex; }
-        input { background: #000; border: 1px solid #D4AF37; color: gold; padding: 10px; flex-grow: 1; outline: none; width: 50%; }
+        
+        input { background: #000; border: 1px solid #D4AF37; color: gold; padding: 10px; flex-grow: 1; outline: none; }
         button#send-btn { background: #D4AF37; color: black; border: none; padding: 10px; cursor: pointer; font-weight: bold; }
-        #status-overlay { position: absolute; top: 20px; left: 20px; z-index: 100; background: rgba(0,0,0,0.9); padding: 10px; border: 1px solid #D4AF37; }
+        
+        #status-overlay { position: absolute; top: 20px; left: 20px; z-index: 100; background: rgba(0,0,0,0.9); padding: 10px; border: 1px solid #D4AF37; border-radius: 4px; }
     </style>
 </head>
 <body>
@@ -30,7 +36,7 @@
     
     <div id="chat-sidebar">
         <div id="chat-header">LINK: <span id="location-name">None</span></div>
-        <div id="chat-messages"><p>Select a Chrono-Point on the globe.</p></div>
+        <div id="chat-messages"><p>Select a gold Chrono-Point to begin.</p></div>
         <div id="chat-input-area">
             <input type="text" id="user-input" placeholder="Ask...">
             <button id="send-btn">SEND</button>
@@ -41,27 +47,27 @@
     <div id="map-container"></div>
 
     <script>
-        let viewer;
-        let currentSiteKey = "";
+        var viewer;
+        var currentSiteKey = "";
 
-        const historyData = {
-            "Giza": { name: "Pyramid of Giza", lat: 31.1342, lon: 29.9792, fact: "The Great Pyramid of Khufu." },
-            "Rome": { name: "The Colosseum", lat: 12.4922, lon: 41.8902, fact: "Rome's grand arena of stone." },
-            "Athens": { name: "The Parthenon", lat: 23.7285, lon: 37.9715, fact: "The crown of the Acropolis." }
+        var historyData = {
+            "Giza": { name: "Great Pyramid of Giza", lat: 31.1342, lon: 29.9792, fact: "The only surviving wonder of the ancient world." },
+            "Rome": { name: "The Colosseum", lat: 12.4922, lon: 41.8902, fact: "The epicentre of Roman architecture." },
+            "Athens": { name: "The Parthenon", lat: 23.7285, lon: 37.9715, fact: "Dedicated to the goddess Athena." }
         };
 
-        // RETRY LOGIC FOR LOW-POWER DEVICES
         function startEngine() {
-            const status = document.getElementById('status-text');
+            var status = document.getElementById('status-text');
             
+            // Handshake verification
             if (typeof Cesium === 'undefined') {
                 status.innerText = "RETRYING HANDSHAKE...";
-                setTimeout(startEngine, 1000); // Wait 1 second and try again
+                setTimeout(startEngine, 1000);
                 return;
             }
 
             try {
-                status.innerText = "CORE DETECTED. LOADING 3D...";
+                status.innerText = "CORE DETECTED. INITIALIZING 3D...";
                 
                 viewer = new Cesium.Viewer('map-container', {
                     imageryProvider: new Cesium.UrlTemplateImageryProvider({
@@ -69,28 +75,31 @@
                         subdomains: ['a', 'b', 'c']
                     }),
                     baseLayerPicker: false, geocoder: false, timeline: false, animation: false,
-                    requestRenderMode: true // VITAL for mobile performance
+                    requestRenderMode: true // VITAL for mobile/Chromebook performance
                 });
 
-                // Load buildings without terrain to save VRAM
+                // Add 3D OSM Buildings (Safely)
                 viewer.scene.primitives.add(Cesium.createOsmBuildings());
 
-                Object.keys(historyData).forEach(key => {
-                    const site = historyData[key];
+                // Populate Chrono-Points
+                Object.keys(historyData).forEach(function(key) {
+                    var site = historyData[key];
                     viewer.entities.add({
                         id: key,
                         position: Cesium.Cartesian3.fromDegrees(site.lat, site.lon, 50),
                         label: { text: site.name, font: '12pt serif', fillColor: Cesium.Color.GOLD, pixelOffset: new Cesium.Cartesian2(0, -40) },
-                        point: { pixelSize: 10, color: Cesium.Color.GOLD }
+                        point: { pixelSize: 10, color: Cesium.Color.GOLD, outlineColor: Cesium.Color.BLACK, outlineWidth: 2 }
                     });
                 });
 
+                // Interaction Logic
                 viewer.screenSpaceEventHandler.setInputAction(function(movement) {
-                    const picked = viewer.scene.pick(movement.position);
+                    var picked = viewer.scene.pick(movement.position);
                     if (picked && picked.id && historyData[picked.id.id]) {
-                        const site = historyData[picked.id.id];
+                        var site = historyData[picked.id.id];
                         currentSiteKey = picked.id.id;
                         openSidebar(site.name, site.fact);
+                        
                         viewer.camera.flyTo({
                             destination: Cesium.Cartesian3.fromDegrees(site.lat, site.lon, 800),
                             orientation: { pitch: Cesium.Math.toRadians(-25.0) }
@@ -99,17 +108,17 @@
                 }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 
                 status.innerText = "SYSTEM ACTIVE";
-                setTimeout(() => document.getElementById('status-overlay').style.display='none', 2000);
+                setTimeout(function() { document.getElementById('status-overlay').style.display='none'; }, 2000);
                 initChat();
 
             } catch (e) {
-                status.innerText = "GPU REFUSED 3D: " + e.message;
+                status.innerText = "GPU ERROR: " + e.message;
             }
         }
 
         function openSidebar(name, fact) {
             document.getElementById('location-name').innerText = name;
-            document.getElementById('chat-messages').innerHTML = `<p><strong>Guide:</strong> ${fact}</p>`;
+            document.getElementById('chat-messages').innerHTML = "<p><strong>Guide:</strong> " + fact + "</p>";
             document.getElementById('chat-sidebar').style.right = "0px";
         }
 
@@ -117,24 +126,24 @@
 
         function initChat() {
             document.getElementById('send-btn').onclick = sendMessage;
-            document.getElementById('user-input').onkeypress = (e) => { if(e.key === 'Enter') sendMessage(); };
+            document.getElementById('user-input').onkeypress = function(e) { if(e.key === 'Enter') sendMessage(); };
         }
 
         function sendMessage() {
-            const input = document.getElementById('user-input');
-            const messages = document.getElementById('chat-messages');
+            var input = document.getElementById('user-input');
+            var messages = document.getElementById('chat-messages');
             if (input.value.trim() !== "") {
-                messages.innerHTML += `<p style="color:white; font-style:normal;"><strong>You:</strong> ${input.value}</p>`;
-                setTimeout(() => {
-                    messages.innerHTML += `<p><strong>Guide:</strong> Architecture is the silent language of the past.</p>`;
+                messages.innerHTML += "<p style='color:white; font-style:normal;'><strong>You:</strong> " + input.value + "</p>";
+                setTimeout(function() {
+                    messages.innerHTML += "<p><strong>Guide:</strong> Every stone here at " + currentSiteKey + " holds a story.</p>";
                     messages.scrollTop = messages.scrollHeight;
                 }, 800);
                 input.value = "";
             }
         }
 
-        // Start attempt as soon as basic script is read
-        startEngine();
+        // Standard load trigger
+        window.onload = startEngine;
     </script>
 </body>
 </html>
