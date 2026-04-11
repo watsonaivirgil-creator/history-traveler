@@ -1,26 +1,77 @@
-<script>
-    window.onload = function() {
-        try {
-            const viewer = new Cesium.Viewer('map-container', {
-                // Use the most basic, high-compatibility imagery provider
-                imageryProvider: new Cesium.TileMapServiceImageryProvider({
-                    url: Cesium.buildModuleUrl('Assets/Textures/NaturalEarthII')
-                }),
-                baseLayerPicker: false,
-                geocoder: false,
-                timeline: false,
-                animation: false,
-                // Force the globe to stay on even if terrain fails
-                terrainProvider: new Cesium.EllipsoidTerrainProvider()
-            });
-
-            // Set a bright background color so we know the container is active
-            viewer.scene.backgroundColor = Cesium.Color.DARKBLUE;
-            
-            console.log("Success: Map is active.");
-
-        } catch (e) {
-            console.error("Cesium Load Fail:", e);
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>History Traveler</title>
+    
+    <link href="https://unpkg.com/cesium@1.105.1/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+    
+    <style>
+        body, html { margin: 0; padding: 0; height: 100%; background: #000; overflow: hidden; color: gold; }
+        #map-container { width: 100vw; height: 100vh; background: #111; }
+        #status-overlay { 
+            position: absolute; top: 20px; left: 20px; z-index: 100; 
+            background: rgba(0,0,0,0.7); padding: 15px; border: 1px solid #D4AF37;
         }
-    };
-</script>
+    </style>
+</head>
+<body>
+
+    <div id="status-overlay">
+        <strong>System:</strong> <span id="status-text">Connecting to Satellite...</span>
+    </div>
+    
+    <div id="map-container"></div>
+
+    <script>
+        const status = document.getElementById('status-text');
+
+        // 1. Manually create the script tag to ensure we can track its loading
+        const script = document.createElement('script');
+        script.src = "https://unpkg.com/cesium@1.105.1/Build/Cesium/Cesium.js";
+        script.async = false; // Ensure it loads in order
+
+        script.onload = function() {
+            status.innerText = "Library Loaded. Initializing Globe...";
+            startEngine();
+        };
+
+        script.onerror = function() {
+            status.innerText = "Connection Failed. Check Internet.";
+        };
+
+        document.head.appendChild(script);
+
+        function startEngine() {
+            try {
+                // Ensure Cesium is globally available
+                if (typeof Cesium === 'undefined') {
+                    throw new Error("Cesium library failed to initialize in global scope.");
+                }
+
+                const viewer = new Cesium.Viewer('map-container', {
+                    imageryProvider: new Cesium.TileMapServiceImageryProvider({
+                        url: Cesium.buildModuleUrl('Assets/Textures/NaturalEarthII')
+                    }),
+                    baseLayerPicker: false,
+                    geocoder: false,
+                    timeline: false,
+                    animation: false,
+                    terrainProvider: new Cesium.EllipsoidTerrainProvider()
+                });
+
+                status.innerText = "ENGINE ONLINE - Welcome Traveler";
+                // Fade out the status after 3 seconds
+                setTimeout(() => {
+                    document.getElementById('status-overlay').style.display = 'none';
+                }, 3000);
+
+            } catch (e) {
+                status.innerHTML = "<span style='color:red;'>Initialization Error: " + e.message + "</span>";
+                console.error(e);
+            }
+        }
+    </script>
+</body>
+</html>
