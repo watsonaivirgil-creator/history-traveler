@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>History Traveler</title>
     
-    <script src="https://cesium.com/downloads/cesiumjs/releases/1.105/Build/Cesium/Cesium.js"></script>
-    <link href="https://cesium.com/downloads/cesiumjs/releases/1.105/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+    <script src="https://unpkg.com/cesium@1.105.1/Build/Cesium/Cesium.js"></script>
+    <link href="https://unpkg.com/cesium@1.105.1/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
     
     <style>
         body, html { margin: 0; padding: 0; height: 100%; background: #000; overflow: hidden; color: gold; font-family: 'serif'; }
@@ -32,11 +32,11 @@
 </head>
 <body>
 
-    <div id="status-overlay"><strong>SYSTEM:</strong> <span id="status-text">INITIALIZING 3D LINK...</span></div>
+    <div id="status-overlay"><strong>SYSTEM:</strong> <span id="status-text">UPLINKING 3D MESH...</span></div>
     
     <div id="chat-sidebar">
         <div id="chat-header">CHRONO-LINK: <span id="location-name">Unknown</span></div>
-        <div id="chat-messages"><p>Select a Chrono-Point to begin the dialogue.</p></div>
+        <div id="chat-messages"><p>Select a gold Chrono-Point to begin the dialogue.</p></div>
         <div id="chat-input-area">
             <input type="text" id="user-input" placeholder="Ask the past...">
             <button id="send-btn">SEND</button>
@@ -51,31 +51,29 @@
         let currentSiteKey = "";
 
         const historyData = {
-            "Giza": { name: "Great Pyramid of Giza", lat: 31.1342, lon: 29.9792, fact: "Built c. 2560 BCE, it is the only surviving Ancient Wonder." },
-            "Rome": { name: "The Colosseum", lat: 12.4922, lon: 41.8902, fact: "Commissioned in 72 AD, the symbol of Roman might." },
-            "Athens": { name: "The Parthenon", lat: 23.7285, lon: 37.9715, fact: "Completed in 438 BCE to honor Athena Parthenos." }
+            "Giza": { name: "Great Pyramid of Giza", lat: 31.1342, lon: 29.9792, fact: "The last surviving original World Wonder." },
+            "Rome": { name: "The Colosseum", lat: 12.4922, lon: 41.8902, fact: "The largest amphitheatre built in antiquity." },
+            "Athens": { name: "The Parthenon", lat: 23.7285, lon: 37.9715, fact: "A symbol of ancient Greek democracy and art." }
         };
 
-        function startEngine() {
+        async function startEngine() {
             try {
-                // Check if library loaded
-                if (typeof Cesium === 'undefined') {
-                    document.getElementById('status-text').innerText = "FATAL: Library Missing";
-                    return;
-                }
-
+                // Initialize the globe with Terrain
                 viewer = new Cesium.Viewer('map-container', {
+                    terrainProvider: await Cesium.createWorldTerrainAsync(),
                     imageryProvider: new Cesium.UrlTemplateImageryProvider({
                         url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
                         subdomains: ['a', 'b', 'c']
                     }),
-                    baseLayerPicker: false, geocoder: false, timeline: false, animation: false
+                    baseLayerPicker: false, geocoder: false, timeline: false, animation: false,
+                    infoBox: false, selectionIndicator: false
                 });
 
-                // Add 3D OSM Buildings (Safely)
-                viewer.scene.primitives.add(Cesium.createOsmBuildings());
+                // Add 3D Buildings - The "OSM Buildings" layer
+                const osmBuildings = await Cesium.createOsmBuildingsAsync();
+                viewer.scene.primitives.add(osmBuildings);
 
-                // Add markers
+                // Add Chrono-Points
                 Object.keys(historyData).forEach(key => {
                     const site = historyData[key];
                     viewer.entities.add({
@@ -86,7 +84,7 @@
                     });
                 });
 
-                // Mouse interaction
+                // Click event logic
                 viewer.screenSpaceEventHandler.setInputAction(function(movement) {
                     const picked = viewer.scene.pick(movement.position);
                     if (picked && picked.id && historyData[picked.id.id]) {
@@ -94,21 +92,24 @@
                         currentSiteKey = picked.id.id;
                         openSidebar(site.name, site.fact);
                         
-                        // FlyTo with 3D tilt
+                        // Fly to with a significant tilt to force 3D rendering
                         viewer.camera.flyTo({
-                            destination: Cesium.Cartesian3.fromDegrees(site.lat, site.lon, 1000),
-                            orientation: { pitch: Cesium.Math.toRadians(-30.0) }
+                            destination: Cesium.Cartesian3.fromDegrees(site.lat, site.lon, 800),
+                            orientation: {
+                                pitch: Cesium.Math.toRadians(-25.0),
+                                heading: 0.0
+                            }
                         });
                     }
                 }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 
-                document.getElementById('status-text').innerText = "3D UPLINK ESTABLISHED";
+                document.getElementById('status-text').innerText = "3D UPLINK ACTIVE";
                 setTimeout(() => document.getElementById('status-overlay').style.display='none', 2000);
                 
-                initChatHandlers();
+                initChat();
 
             } catch (e) {
-                document.getElementById('status-text').innerText = "ERROR: " + e.message;
+                document.getElementById('status-text').innerText = "GPU ERROR: 3D LIMITED";
                 console.error(e);
             }
         }
@@ -121,28 +122,24 @@
 
         function closeSidebar() { document.getElementById('chat-sidebar').style.right = "-400px"; }
 
-        function initChatHandlers() {
-            const sendBtn = document.getElementById('send-btn');
-            const input = document.getElementById('user-input');
-
-            sendBtn.onclick = sendMessage;
-            input.onkeypress = (e) => { if(e.key === 'Enter') sendMessage(); };
+        function initChat() {
+            document.getElementById('send-btn').onclick = sendMessage;
+            document.getElementById('user-input').onkeypress = (e) => { if(e.key === 'Enter') sendMessage(); };
         }
 
         function sendMessage() {
             const input = document.getElementById('user-input');
-            const chatBox = document.getElementById('chat-messages');
+            const messages = document.getElementById('chat-messages');
             if (input.value.trim() !== "") {
-                chatBox.innerHTML += `<p style="color:white; font-style:normal;"><strong>You:</strong> ${input.value}</p>`;
+                messages.innerHTML += `<p style="color:white; font-style:normal;"><strong>You:</strong> ${input.value}</p>`;
                 setTimeout(() => {
-                    chatBox.innerHTML += `<p><strong>Guide:</strong> The legacy of ${currentSiteKey} remains strong. What else do you wish to know?</p>`;
-                    chatBox.scrollTop = chatBox.scrollHeight;
+                    messages.innerHTML += `<p><strong>Guide:</strong> In the time of ${currentSiteKey}, this monument stood as a testament to the heights of human ambition.</p>`;
+                    messages.scrollTop = messages.scrollHeight;
                 }, 800);
                 input.value = "";
             }
         }
 
-        // Wait for window load
         window.onload = startEngine;
     </script>
 </body>
