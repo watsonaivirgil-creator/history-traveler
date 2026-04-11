@@ -9,100 +9,95 @@
     
     <style>
         body, html { margin: 0; padding: 0; height: 100%; background: #000; overflow: hidden; color: gold; font-family: 'serif'; }
-        #map-container { width: 100vw; height: 100vh; background: #111; }
-        #status-overlay { 
-            position: absolute; top: 20px; left: 20px; z-index: 100; 
-            background: rgba(0,0,0,0.85); padding: 15px; border: 1px solid #D4AF37;
-            border-radius: 4px; box-shadow: 0 0 15px rgba(212, 175, 55, 0.3);
-            pointer-events: none;
+        #map-container { width: 100vw; height: 100vh; background: #111; transition: margin-right 0.5s; }
+        
+        /* The Sidebar */
+        #chat-sidebar {
+            position: absolute; top: 0; right: -400px; /* Hidden by default */
+            width: 350px; height: 100%; background: rgba(10, 10, 10, 0.95);
+            border-left: 2px solid #D4AF37; z-index: 1000;
+            transition: right 0.5s ease; display: flex; flex-direction: column;
+            box-shadow: -5px 0 15px rgba(0,0,0,0.5);
         }
-        /* Style for the popup info box */
-        .cesium-infoBox { background: rgba(0,0,0,0.9); border: 1px solid #D4AF37; }
+
+        #chat-header { padding: 20px; border-bottom: 1px solid #D4AF37; background: #1a1a1a; font-weight: bold; }
+        #chat-messages { flex-grow: 1; padding: 20px; overflow-y: auto; font-style: italic; line-height: 1.6; }
+        #chat-input-area { padding: 20px; border-top: 1px solid #333; display: flex; }
+        
+        input { background: #000; border: 1px solid #D4AF37; color: gold; padding: 10px; flex-grow: 1; outline: none; }
+        button#send-btn { background: #D4AF37; color: black; border: none; padding: 10px 15px; cursor: pointer; font-weight: bold; }
+        
+        #status-overlay { position: absolute; top: 20px; left: 20px; z-index: 100; background: rgba(0,0,0,0.8); padding: 10px; border: 1px solid #D4AF37; }
     </style>
 </head>
 <body>
 
-    <div id="status-overlay">
-        <strong>SYSTEM:</strong> <span id="status-text">INITIALIZING CHRONO-LINK...</span>
-    </div>
+    <div id="status-overlay"><strong>SYSTEM:</strong> <span id="status-text">INITIALIZING...</span></div>
     
+    <div id="chat-sidebar">
+        <div id="chat-header">CHRONO-LINK: <span id="location-name">Unknown</span></div>
+        <div id="chat-messages">
+            <p>Welcome, Traveler. I am the Chrono-Guide. What mysteries of this era shall we unearth?</p>
+        </div>
+        <div id="chat-input-area">
+            <input type="text" id="user-input" placeholder="Ask the past...">
+            <button id="send-btn">SEND</button>
+        </div>
+        <button onclick="closeSidebar()" style="background:none; color:grey; border:none; padding:10px; cursor:pointer;">[ Close Link ]</button>
+    </div>
+
     <div id="map-container"></div>
 
     <script>
+        let viewer;
         const status = document.getElementById('status-text');
 
-        // 1. THE ENGINE ENGINE
         function startEngine() {
             try {
-                const viewer = new Cesium.Viewer('map-container', {
+                viewer = new Cesium.Viewer('map-container', {
                     imageryProvider: new Cesium.UrlTemplateImageryProvider({
                         url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
                         subdomains: ['a', 'b', 'c']
                     }),
-                    baseLayerPicker: false,
-                    geocoder: false,
-                    timeline: false,
-                    animation: false,
-                    sceneModePicker: true,
-                    navigationHelpButton: false
+                    baseLayerPicker: false, geocoder: false, timeline: false, animation: false
                 });
 
-                // 2. ADD HISTORICAL MARKER: THE GREAT PYRAMID
-                const pyramidPoint = viewer.entities.add({
-                    name: "The Great Pyramid of Giza",
+                // Add Great Pyramid
+                const pyramid = viewer.entities.add({
+                    name: "The Great Pyramid",
                     position: Cesium.Cartesian3.fromDegrees(31.1342, 29.9792, 146.0),
-                    billboard: {
-                        image: 'https://img.icons8.com/color/48/000000/pyramids.png',
-                        verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
-                    },
-                    label: {
-                        text: 'The Great Pyramid (c. 2560 BCE)',
-                        font: '14pt serif',
-                        fillColor: Cesium.Color.GOLD,
-                        outlineColor: Cesium.Color.BLACK,
-                        outlineWidth: 3,
-                        style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-                        pixelOffset: new Cesium.Cartesian2(0, -50)
-                    },
-                    description: `
-                        <div style="padding: 10px; color: gold;">
-                            <p>Built for the Pharaoh Khufu, this was the tallest man-made structure in the world for over 3,800 years.</p>
-                            <hr>
-                            <p><i>Click to initiate Socratic Dialogue...</i></p>
-                        </div>
-                    `
+                    billboard: { image: 'https://img.icons8.com/color/48/000000/pyramids.png', verticalOrigin: Cesium.VerticalOrigin.BOTTOM },
+                    label: { text: 'Great Pyramid', font: '12pt serif', fillColor: Cesium.Color.GOLD, pixelOffset: new Cesium.Cartesian2(0, -40) }
                 });
 
-                // 3. LAUNCH VIEW
-                viewer.zoomTo(pyramidPoint);
+                // CLICK EVENT: Open Sidebar
+                viewer.screenSpaceEventHandler.setInputAction(function onLeftClick(movement) {
+                    const pickedObject = viewer.scene.pick(movement.position);
+                    if (Cesium.defined(pickedObject) && pickedObject.id === pyramid) {
+                        openSidebar("The Great Pyramid of Giza");
+                    }
+                }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 
-                status.innerText = "SATELLITE LINK ESTABLISHED";
-                
-                setTimeout(() => {
-                    document.getElementById('status-overlay').style.transition = "opacity 1.5s";
-                    document.getElementById('status-overlay').style.opacity = "0";
-                }, 3000);
+                viewer.zoomTo(pyramid);
+                status.innerText = "LINK ESTABLISHED";
+                setTimeout(() => document.getElementById('status-overlay').style.display = 'none', 2000);
 
-            } catch (e) {
-                status.innerHTML = "<span style='color:red;'>LINK ERROR: " + e.message + "</span>";
-                console.error("Initialization Failed:", e);
-            }
+            } catch (e) { status.innerText = "ERR: " + e.message; }
         }
 
-        // 3. LOAD LIBRARY DYNAMICALLY
+        function openSidebar(name) {
+            document.getElementById('location-name').innerText = name;
+            document.getElementById('chat-sidebar').style.right = "0px";
+        }
+
+        function closeSidebar() {
+            document.getElementById('chat-sidebar').style.right = "-400px";
+        }
+
+        // Script loading logic
         const script = document.createElement('script');
         script.src = "https://unpkg.com/cesium@1.105.1/Build/Cesium/Cesium.js";
-        script.async = false;
-
-        script.onload = function() {
-            status.innerText = "COORDINATES SECURED. LOADING MAP...";
-            setTimeout(startEngine, 1000);
-        };
-
-        script.onerror = function() {
-            status.innerText = "NETWORK FAILURE.";
-        };
-
+        script.onload = () => setTimeout(startEngine, 1000);
         document.head.appendChild(script);
     </script>
 </body>
