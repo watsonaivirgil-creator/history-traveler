@@ -1,32 +1,26 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>History Traveler</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.105.1/Cesium.js"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.105.1/Widgets/widgets.css" rel="stylesheet">
-    <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; }
-        #map-container { width: 100vw; height: 100vh; }
-    </style>
-</head>
-<body>
-    <div id="map-container"></div>
-    <script>
-        // Use a slight delay to ensure the DOM is fully ready
-        setTimeout(() => {
-            try {
-                const viewer = new Cesium.Viewer('map-container', {
-                    terrainProvider: Cesium.createWorldTerrain(),
-                    baseLayerPicker: false,
-                    geocoder: false
-                });
-                console.log("Map Initialized!");
-            } catch (e) {
-                console.error("Initialization Error:", e);
-            }
-        }, 500);
-    </script>
-</body>
-</html>
+<script>
+    window.onload = function() {
+        try {
+            const viewer = new Cesium.Viewer('map-container', {
+                // Use the most basic, high-compatibility imagery provider
+                imageryProvider: new Cesium.TileMapServiceImageryProvider({
+                    url: Cesium.buildModuleUrl('Assets/Textures/NaturalEarthII')
+                }),
+                baseLayerPicker: false,
+                geocoder: false,
+                timeline: false,
+                animation: false,
+                // Force the globe to stay on even if terrain fails
+                terrainProvider: new Cesium.EllipsoidTerrainProvider()
+            });
+
+            // Set a bright background color so we know the container is active
+            viewer.scene.backgroundColor = Cesium.Color.DARKBLUE;
+            
+            console.log("Success: Map is active.");
+
+        } catch (e) {
+            console.error("Cesium Load Fail:", e);
+        }
+    };
+</script>
