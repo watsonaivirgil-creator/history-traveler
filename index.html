@@ -8,18 +8,19 @@
     <link href="https://unpkg.com/cesium@1.105.1/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
     
     <style>
-        body, html { margin: 0; padding: 0; height: 100%; background: #000; overflow: hidden; color: gold; }
+        body, html { margin: 0; padding: 0; height: 100%; background: #000; overflow: hidden; color: gold; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         #map-container { width: 100vw; height: 100vh; background: #111; }
         #status-overlay { 
             position: absolute; top: 20px; left: 20px; z-index: 100; 
-            background: rgba(0,0,0,0.7); padding: 15px; border: 1px solid #D4AF37;
+            background: rgba(0,0,0,0.85); padding: 15px; border: 1px solid #D4AF37;
+            border-radius: 4px; box-shadow: 0 0 15px rgba(212, 175, 55, 0.3);
         }
     </style>
 </head>
 <body>
 
     <div id="status-overlay">
-        <strong>System:</strong> <span id="status-text">Connecting to Satellite...</span>
+        <strong>SYSTEM:</strong> <span id="status-text">CONNECTING TO SATELLITE...</span>
     </div>
     
     <div id="map-container"></div>
@@ -27,64 +28,61 @@
     <script>
         const status = document.getElementById('status-text');
 
-        // 1. Manually create the script tag to ensure we can track its loading
-        const script = document.createElement('script');
-        script.src = "https://unpkg.com/cesium@1.105.1/Build/Cesium/Cesium.js";
-        script.async = false; // Ensure it loads in order
+        // 1. ENGINE DEFINITION
+        function startEngine() {
+            try {
+                const viewer = new Cesium.Viewer('map-container', {
+                    imageryProvider: new Cesium.UrlTemplateImageryProvider({
+                        url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                        subdomains: ['a', 'b', 'c']
+                    }),
+                    baseLayerPicker: false,
+                    geocoder: false,
+                    timeline: false,
+                    animation: false,
+                    infoBox: false,
+                    selectionIndicator: false
+                });
 
-        script.onload = function() {
-            status.innerText = "Library Loaded. Initializing Globe...";
-            startEngine();
-        };
+                // Fly to the Great Pyramid of Giza
+                viewer.camera.flyTo({
+                    destination: Cesium.Cartesian3.fromDegrees(31.1342, 29.9792, 5000.0),
+                    duration: 2
+                });
 
-        script.onerror = function() {
-            status.innerText = "Connection Failed. Check Internet.";
-        };
-
-        document.head.appendChild(script);
-
-       function startEngine() {
-    try {
-        const viewer = new Cesium.Viewer('map-container', {
-            // Using a standard OpenStreetMap layer to bypass 'Ion' authentication issues
-            imageryProvider: new Cesium.UrlTemplateImageryProvider({
-                url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-                subdomains: ['a', 'b', 'c'],
-                maximumLevel: 19
-            }),
-            baseLayerPicker: false,
-            geocoder: false,
-            timeline: false,
-            animation: false,
-            terrainProvider: new Cesium.EllipsoidTerrainProvider()
-        });
-
-        // Center the view on a historic landmark: The Great Pyramid
-        viewer.camera.setView({
-            destination: Cesium.Cartesian3.fromDegrees(31.1342, 29.9792, 5000.0)
-        });
-
-        status.innerText = "SATELLITE LINK ESTABLISHED";
-        setTimeout(() => {
-            document.getElementById('status-overlay').style.display = 'none';
-        }, 2000);
-
-    } catch (e) {
-        status.innerHTML = "<span style='color:red;'>Link Error: " + e.message + "</span>";
-    }
-}
-
-                status.innerText = "ENGINE ONLINE - Welcome Traveler";
-                // Fade out the status after 3 seconds
+                status.innerText = "SATELLITE LINK ESTABLISHED";
+                
+                // Keep the success message visible for a moment then hide
                 setTimeout(() => {
-                    document.getElementById('status-overlay').style.display = 'none';
+                    document.getElementById('status-overlay').style.transition = "opacity 1s";
+                    document.getElementById('status-overlay').style.opacity = "0";
+                    setTimeout(() => {
+                        document.getElementById('status-overlay').style.display = "none";
+                    }, 1000);
                 }, 3000);
 
             } catch (e) {
-                status.innerHTML = "<span style='color:red;'>Initialization Error: " + e.message + "</span>";
-                console.error(e);
+                status.innerHTML = "<span style='color:red;'>LINK ERROR: " + e.message + "</span>";
+                console.error("Cesium Initialization Failed:", e);
             }
         }
+
+        // 2. LIBRARY LOADING LOGIC
+        const script = document.createElement('script');
+        script.src = "https://unpkg.com/cesium@1.105.1/Build/Cesium/Cesium.js";
+        script.async = false;
+
+        script.onload = function() {
+            status.innerText = "LIBRARY LOADED. HANDSHAKING...";
+            // Brief pause to ensure the 'Cesium' object is ready in the browser's memory
+            setTimeout(startEngine, 800);
+        };
+
+        script.onerror = function() {
+            status.innerText = "CONNECTION FAILED. CHECK NETWORK.";
+        };
+
+        document.head.appendChild(script);
     </script>
 </body>
 </html>
