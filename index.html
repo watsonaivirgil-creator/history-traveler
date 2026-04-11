@@ -5,13 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="manifest" href="/manifest.json">
     <title>History Traveler</title>
+    <link href="https://cesium.com/downloads/cesiumjs/releases/1.110/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+    <script src="https://cesium.com/downloads/cesiumjs/releases/1.110/Build/Cesium/Cesium.js"></script>
     <style>
-        body, html { margin: 0; padding: 0; height: 100%; width: 100%; background: #0F172A; overflow: hidden; }
+        body, html { margin: 0; padding: 0; height: 100%; width: 100%; background: #000; overflow: hidden; }
         #map-container { height: 100vh; width: 100vw; }
-        .ui-overlay { position: absolute; top: 20px; left: 20px; z-index: 10; pointer-events: none; }
-        h1 { color: #D4AF37; font-family: serif; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); margin: 0; }
+        .ui-overlay { position: absolute; top: 20px; left: 20px; z-index: 10; pointer-events: none; color: #D4AF37; font-family: 'Times New Roman', serif; }
     </style>
-    <script async src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&v=beta&libraries=maps3d"></script>
 </head>
 <body>
     <div class="ui-overlay">
@@ -21,9 +21,6 @@
     <script src="app.js"></script>
     <script>
         if ('serviceWorker' in navigator) { navigator.serviceWorker.register('/sw.js'); }
-    </script>
-</body>
-</html>
     </script>
 </body>
 </html>
