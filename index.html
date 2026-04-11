@@ -9,47 +9,67 @@
     
     <style>
         body, html { margin: 0; padding: 0; height: 100%; background: #000; overflow: hidden; color: gold; font-family: 'serif'; }
-        #map-container { width: 100vw; height: 100vh; background: #111; transition: margin-right 0.5s; }
+        #map-container { width: 100vw; height: 100vh; background: #111; }
         
+        /* The Chrono-Link Sidebar */
         #chat-sidebar {
-            position: absolute; top: 0; right: -400px;
+            position: absolute; top: 0; right: -400px; 
             width: 350px; height: 100%; background: rgba(10, 10, 10, 0.95);
             border-left: 2px solid #D4AF37; z-index: 1000;
             transition: right 0.5s ease; display: flex; flex-direction: column;
             box-shadow: -5px 0 15px rgba(0,0,0,0.5);
         }
 
-        #chat-header { padding: 20px; border-bottom: 1px solid #D4AF37; background: #1a1a1a; font-weight: bold; }
+        #chat-header { padding: 20px; border-bottom: 1px solid #D4AF37; background: #1a1a1a; font-weight: bold; font-size: 1.1em; }
         #chat-messages { flex-grow: 1; padding: 20px; overflow-y: auto; font-style: italic; line-height: 1.6; }
         #chat-input-area { padding: 20px; border-top: 1px solid #333; display: flex; }
         
         input { background: #000; border: 1px solid #D4AF37; color: gold; padding: 10px; flex-grow: 1; outline: none; }
         button#send-btn { background: #D4AF37; color: black; border: none; padding: 10px 15px; cursor: pointer; font-weight: bold; }
         
-        #status-overlay { position: absolute; top: 20px; left: 20px; z-index: 100; background: rgba(0,0,0,0.8); padding: 10px; border: 1px solid #D4AF37; }
+        #status-overlay { position: absolute; top: 20px; left: 20px; z-index: 100; background: rgba(0,0,0,0.8); padding: 10px; border: 1px solid #D4AF37; border-radius: 4px; }
     </style>
 </head>
 <body>
 
-    <div id="status-overlay"><strong>SYSTEM:</strong> <span id="status-text">INITIALIZING...</span></div>
+    <div id="status-overlay"><strong>SYSTEM:</strong> <span id="status-text">SYNCING CHRONO-POINTS...</span></div>
     
     <div id="chat-sidebar">
-        <div id="chat-header">CHRONO-LINK: <span id="location-name">Unknown</span></div>
+        <div id="chat-header">CHRONO-LINK: <span id="location-name">Awaiting Link</span></div>
         <div id="chat-messages">
-            <p>Welcome, Traveler. I am the Chrono-Guide. What mysteries of this era shall we unearth?</p>
+            <p>Welcome, Traveler. Select a gold Chrono-Point on the globe to initiate the historical uplink.</p>
         </div>
         <div id="chat-input-area">
             <input type="text" id="user-input" placeholder="Ask the past...">
             <button id="send-btn">SEND</button>
         </div>
-        <button onclick="closeSidebar()" style="background:none; color:grey; border:none; padding:10px; cursor:pointer;">[ Close Link ]</button>
+        <button onclick="closeSidebar()" style="background:none; color:grey; border:none; padding:10px; cursor:pointer; font-size: 0.8em;">[ DISCONNECT LINK ]</button>
     </div>
 
     <div id="map-container"></div>
 
     <script>
         let viewer;
-        const status = document.getElementById('status-text');
+        let currentSiteKey = "";
+
+        // CENTRAL DATA REPOSITORY
+        const historyData = {
+            "Giza": { 
+                name: "The Great Pyramid of Giza", 
+                lat: 31.1342, lon: 29.9792, 
+                fact: "Built for Pharaoh Khufu around 2560 BCE. It was the tallest man-made structure for 3,800 years." 
+            },
+            "Rome": { 
+                name: "The Colosseum", 
+                lat: 12.4922, lon: 41.8902, 
+                fact: "An iconic symbol of Imperial Rome, commissioned by Emperor Vespasian in 72 AD." 
+            },
+            "Athens": { 
+                name: "The Parthenon", 
+                lat: 23.7285, lon: 37.9715, 
+                fact: "A former temple on the Athenian Acropolis, dedicated to the goddess Athena in 438 BCE." 
+            }
+        };
 
         function startEngine() {
             try {
@@ -58,71 +78,99 @@
                         url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
                         subdomains: ['a', 'b', 'c']
                     }),
-                    baseLayerPicker: false, geocoder: false, timeline: false, animation: false
+                    baseLayerPicker: false, geocoder: false, timeline: false, animation: false,
+                    navigationHelpButton: false, sceneModePicker: false
                 });
 
-                const pyramid = viewer.entities.add({
-                    name: "The Great Pyramid",
-                    position: Cesium.Cartesian3.fromDegrees(31.1342, 29.9792, 146.0),
-                    billboard: { image: 'https://img.icons8.com/color/48/000000/pyramids.png', verticalOrigin: Cesium.VerticalOrigin.BOTTOM },
-                    label: { text: 'Great Pyramid', font: '12pt serif', fillColor: Cesium.Color.GOLD, pixelOffset: new Cesium.Cartesian2(0, -40) }
+                // POPULATE GLOBE WITH CHRONO-POINTS
+                Object.keys(historyData).forEach(key => {
+                    const site = historyData[key];
+                    viewer.entities.add({
+                        id: key,
+                        name: site.name,
+                        position: Cesium.Cartesian3.fromDegrees(site.lat, site.lon, 100),
+                        label: { 
+                            text: site.name, 
+                            font: '12pt serif', 
+                            fillColor: Cesium.Color.GOLD, 
+                            outlineColor: Cesium.Color.BLACK,
+                            outlineWidth: 2,
+                            style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+                            pixelOffset: new Cesium.Cartesian2(0, -40) 
+                        },
+                        point: { pixelSize: 12, color: Cesium.Color.GOLD, outlineColor: Cesium.Color.BLACK, outlineWidth: 2 }
+                    });
                 });
 
-                viewer.screenSpaceEventHandler.setInputAction(function onLeftClick(movement) {
-                    const pickedObject = viewer.scene.pick(movement.position);
-                    if (Cesium.defined(pickedObject) && pickedObject.id === pyramid) {
-                        openSidebar("The Great Pyramid of Giza");
+                // GLOBAL CLICK HANDLER
+                viewer.screenSpaceEventHandler.setInputAction(function(movement) {
+                    const picked = viewer.scene.pick(movement.position);
+                    if (Cesium.defined(picked) && historyData[picked.id.id]) {
+                        const siteKey = picked.id.id;
+                        const site = historyData[siteKey];
+                        currentSiteKey = siteKey;
+                        
+                        openSidebar(site.name, site.fact);
+                        
+                        // SMOOTH FLIGHT TO LOCATION
+                        viewer.camera.flyTo({
+                            destination: Cesium.Cartesian3.fromDegrees(site.lat, site.lon, 1500),
+                            duration: 2.5
+                        });
                     }
                 }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 
-                viewer.zoomTo(pyramid);
-                status.innerText = "LINK ESTABLISHED";
-                setTimeout(() => document.getElementById('status-overlay').style.display = 'none', 2000);
-
-                // HOOK UP CHAT AFTER ENGINE STARTS
+                document.getElementById('status-text').innerText = "WORLD SYNC COMPLETE";
+                setTimeout(() => document.getElementById('status-overlay').style.display='none', 2000);
+                
                 initChatLogic();
 
-            } catch (e) { status.innerText = "ERR: " + e.message; }
+            } catch (e) { 
+                document.getElementById('status-text').innerText = "ERR: " + e.message; 
+            }
         }
 
-        function openSidebar(name) {
+        function openSidebar(name, initialFact) {
             document.getElementById('location-name').innerText = name;
+            document.getElementById('chat-messages').innerHTML = `
+                <p><strong>Guide:</strong> You have arrived at ${name}.</p>
+                <p>${initialFact}</p>
+                <hr style="border: 0; border-top: 1px solid #333;">
+            `;
             document.getElementById('chat-sidebar').style.right = "0px";
         }
 
-        function closeSidebar() {
-            document.getElementById('chat-sidebar').style.right = "-400px";
+        function closeSidebar() { 
+            document.getElementById('chat-sidebar').style.right = "-400px"; 
         }
 
-        // --- NEW CHAT LOGIC FUNCTIONS ---
         function initChatLogic() {
             const sendBtn = document.getElementById('send-btn');
             const userInput = document.getElementById('user-input');
 
-            sendBtn.addEventListener('click', sendMessage);
-            userInput.addEventListener('keypress', function (e) {
-                if (e.key === 'Enter') sendMessage();
-            });
+            sendBtn.onclick = sendMessage;
+            userInput.onkeypress = (e) => { if(e.key === 'Enter') sendMessage(); };
         }
 
         function sendMessage() {
             const input = document.getElementById('user-input');
-            const chatMessages = document.getElementById('chat-messages');
+            const messages = document.getElementById('chat-messages');
             
             if (input.value.trim() !== "") {
-                chatMessages.innerHTML += `<p style="color: white; font-style: normal;"><strong>You:</strong> ${input.value}</p>`;
+                messages.innerHTML += `<p style="color: white; font-style: normal;"><strong>You:</strong> ${input.value}</p>`;
                 
                 const userText = input.value.toLowerCase();
-                let response = "The sands of time are vast. Ask me about the Pharaohs or the construction of this monument.";
+                let response = `The history of ${currentSiteKey} is etched in stone. Tell me, traveler, what specifically interests you about this site?`;
                 
-                if(userText.includes("who built")) response = "Pharaoh Khufu commissioned this Great Pyramid as his eternal tomb around 2560 BCE.";
-                if(userText.includes("how tall")) response = "It stood at 146.6 meters (481 feet), making it the tallest structure on Earth for over 3,000 years.";
+                // Simple Contextual Responses
+                if(userText.includes("who")) response = "The architects and rulers of this era left behind these monuments to defy time itself.";
+                if(userText.includes("how")) response = "Through immense human labor and engineering that puzzles even modern scholars.";
 
                 setTimeout(() => {
-                    chatMessages.innerHTML += `<p><strong>Guide:</strong> ${response}</p>`;
-                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                    messages.innerHTML += `<p><strong>Guide:</strong> ${response}</p>`;
+                    messages.scrollTop = messages.scrollHeight;
                 }, 800);
-
+                
                 input.value = "";
             }
         }
