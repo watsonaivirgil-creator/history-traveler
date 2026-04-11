@@ -1,32 +1,36 @@
-// History Traveler: Core Engine v1.0
-async function init3DMap() {
-    const API_KEY = 'YOUR_GOOGLE_MAPS_API_KEY'; // We will set this in Vercel later
-    
-    // 1. Load the 3D Library
-    const { Map3DElement } = await google.maps.importLibrary("maps3d");
+// History Traveler: Cesium Engine (Open Source)
+// No Google Billing Required
 
-    // 2. Initialize the Globe centered on the Great Pyramid of Giza
-    const map3D = new Map3DElement({
-        center: { lat: 29.9792, lng: 31.1342, altitude: 500 },
-        tilt: 65,
-        range: 1000
+const initCesium = async () => {
+    // We use the default Ion token for basic 3D buildings/terrain
+    // For production, you can get a free token at cesium.com/ion
+    Cesium.Ion.defaultAccessToken = ''; 
+
+    const viewer = new Cesium.Viewer('map-container', {
+        terrainProvider: Cesium.createWorldTerrain(),
+        animation: false,
+        timeline: false,
+        baseLayerPicker: false,
+        navigationHelpButton: false,
+        infoBox: true
     });
 
-    // 3. Attach to the page
-    document.getElementById('map-container').appendChild(map3D);
-    
-    // 4. Chronos Navigation: Fly to the next destination after a delay
-    setTimeout(() => {
-        map3D.flyCameraTo({
-            endCamera: {
-                center: { lat: 41.8902, lng: 12.4922, altitude: 300 }, // The Colosseum, Rome
-                tilt: 75,
-                range: 800
-            },
-            durationMillis: 10000 // 10-second cinematic flight
-        });
-    }, 5000);
-}
+    // Add 3D Buildings (The 'History' Layer)
+    const osmBuildings = await Cesium.createOsmBuildingsAsync();
+    viewer.scene.primitives.add(osmBuildings);
 
-// Start the engine when the window loads
-window.onload = init3DMap;
+    // Initial Destination: The Colosseum, Rome
+    const destination = Cesium.Cartesian3.fromDegrees(12.4922, 41.8902, 1000);
+
+    viewer.camera.flyTo({
+        destination: destination,
+        orientation: {
+            heading: Cesium.Math.toRadians(0),
+            pitch: Cesium.Math.toRadians(-35),
+            roll: 0.0
+        },
+        duration: 5 // 5 second smooth intro flight
+    });
+};
+
+window.onload = initCesium;
