@@ -1,0 +1,32 @@
+// History Traveler: Core Engine v1.0
+async function init3DMap() {
+    const API_KEY = 'YOUR_GOOGLE_MAPS_API_KEY'; // We will set this in Vercel later
+    
+    // 1. Load the 3D Library
+    const { Map3DElement } = await google.maps.importLibrary("maps3d");
+
+    // 2. Initialize the Globe centered on the Great Pyramid of Giza
+    const map3D = new Map3DElement({
+        center: { lat: 29.9792, lng: 31.1342, altitude: 500 },
+        tilt: 65,
+        range: 1000
+    });
+
+    // 3. Attach to the page
+    document.getElementById('map-container').appendChild(map3D);
+    
+    // 4. Chronos Navigation: Fly to the next destination after a delay
+    setTimeout(() => {
+        map3D.flyCameraTo({
+            endCamera: {
+                center: { lat: 41.8902, lng: 12.4922, altitude: 300 }, // The Colosseum, Rome
+                tilt: 75,
+                range: 800
+            },
+            durationMillis: 10000 // 10-second cinematic flight
+        });
+    }, 5000);
+}
+
+// Start the engine when the window loads
+window.onload = init3DMap;
