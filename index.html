@@ -11,9 +11,8 @@
         body, html { margin: 0; padding: 0; height: 100%; background: #000; overflow: hidden; color: gold; font-family: 'serif'; }
         #map-container { width: 100vw; height: 100vh; background: #111; transition: margin-right 0.5s; }
         
-        /* The Sidebar */
         #chat-sidebar {
-            position: absolute; top: 0; right: -400px; /* Hidden by default */
+            position: absolute; top: 0; right: -400px;
             width: 350px; height: 100%; background: rgba(10, 10, 10, 0.95);
             border-left: 2px solid #D4AF37; z-index: 1000;
             transition: right 0.5s ease; display: flex; flex-direction: column;
@@ -62,7 +61,6 @@
                     baseLayerPicker: false, geocoder: false, timeline: false, animation: false
                 });
 
-                // Add Great Pyramid
                 const pyramid = viewer.entities.add({
                     name: "The Great Pyramid",
                     position: Cesium.Cartesian3.fromDegrees(31.1342, 29.9792, 146.0),
@@ -70,7 +68,6 @@
                     label: { text: 'Great Pyramid', font: '12pt serif', fillColor: Cesium.Color.GOLD, pixelOffset: new Cesium.Cartesian2(0, -40) }
                 });
 
-                // CLICK EVENT: Open Sidebar
                 viewer.screenSpaceEventHandler.setInputAction(function onLeftClick(movement) {
                     const pickedObject = viewer.scene.pick(movement.position);
                     if (Cesium.defined(pickedObject) && pickedObject.id === pyramid) {
@@ -82,6 +79,9 @@
                 status.innerText = "LINK ESTABLISHED";
                 setTimeout(() => document.getElementById('status-overlay').style.display = 'none', 2000);
 
+                // HOOK UP CHAT AFTER ENGINE STARTS
+                initChatLogic();
+
             } catch (e) { status.innerText = "ERR: " + e.message; }
         }
 
@@ -92,6 +92,39 @@
 
         function closeSidebar() {
             document.getElementById('chat-sidebar').style.right = "-400px";
+        }
+
+        // --- NEW CHAT LOGIC FUNCTIONS ---
+        function initChatLogic() {
+            const sendBtn = document.getElementById('send-btn');
+            const userInput = document.getElementById('user-input');
+
+            sendBtn.addEventListener('click', sendMessage);
+            userInput.addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') sendMessage();
+            });
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('user-input');
+            const chatMessages = document.getElementById('chat-messages');
+            
+            if (input.value.trim() !== "") {
+                chatMessages.innerHTML += `<p style="color: white; font-style: normal;"><strong>You:</strong> ${input.value}</p>`;
+                
+                const userText = input.value.toLowerCase();
+                let response = "The sands of time are vast. Ask me about the Pharaohs or the construction of this monument.";
+                
+                if(userText.includes("who built")) response = "Pharaoh Khufu commissioned this Great Pyramid as his eternal tomb around 2560 BCE.";
+                if(userText.includes("how tall")) response = "It stood at 146.6 meters (481 feet), making it the tallest structure on Earth for over 3,000 years.";
+
+                setTimeout(() => {
+                    chatMessages.innerHTML += `<p><strong>Guide:</strong> ${response}</p>`;
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                }, 800);
+
+                input.value = "";
+            }
         }
 
         // Script loading logic
