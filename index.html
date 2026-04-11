@@ -6,19 +6,24 @@
     <link rel="manifest" href="/manifest.json">
     <title>History Traveler</title>
     <style>
-        body { background: #0F172A; color: white; font-family: serif; text-align: center; padding: 50px; }
-        .gold-btn { background: #D4AF37; color: #0F172A; padding: 20px 40px; border-radius: 50px; text-decoration: none; font-weight: bold; font-size: 1.5rem; border: none; cursor: pointer; }
+        body, html { margin: 0; padding: 0; height: 100%; width: 100%; background: #0F172A; overflow: hidden; }
+        #map-container { height: 100vh; width: 100vw; }
+        .ui-overlay { position: absolute; top: 20px; left: 20px; z-index: 10; pointer-events: none; }
+        h1 { color: #D4AF37; font-family: serif; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); margin: 0; }
     </style>
+    <script async src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&v=beta&libraries=maps3d"></script>
 </head>
 <body>
-    <h1>History Traveler</h1>
-    <p>The world is your library. Explore history in 3D.</p>
-    <br><br>
-    <button class="gold-btn" onclick="alert('Starting Journey...')">Begin Exploration</button>
+    <div class="ui-overlay">
+        <h1>History Traveler</h1>
+    </div>
+    <div id="map-container"></div>
+    <script src="app.js"></script>
     <script>
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/sw.js');
-        }
+        if ('serviceWorker' in navigator) { navigator.serviceWorker.register('/sw.js'); }
+    </script>
+</body>
+</html>
     </script>
 </body>
 </html>
