@@ -44,22 +44,30 @@
         document.head.appendChild(script);
 
         function startEngine() {
-            try {
-                // Ensure Cesium is globally available
-                if (typeof Cesium === 'undefined') {
-                    throw new Error("Cesium library failed to initialize in global scope.");
-                }
+    try {
+        const viewer = new Cesium.Viewer('map-container', {
+            // This provider is the most reliable for 'instant' world viewing
+            imageryProvider: new Cesium.IonImageryProvider({ assetId: 3 }), 
+            baseLayerPicker: false,
+            geocoder: false,
+            timeline: false,
+            animation: false
+        });
 
-                const viewer = new Cesium.Viewer('map-container', {
-                    imageryProvider: new Cesium.TileMapServiceImageryProvider({
-                        url: Cesium.buildModuleUrl('Assets/Textures/NaturalEarthII')
-                    }),
-                    baseLayerPicker: false,
-                    geocoder: false,
-                    timeline: false,
-                    animation: false,
-                    terrainProvider: new Cesium.EllipsoidTerrainProvider()
-                });
+        // Set the initial view to see the whole Earth
+        viewer.camera.setView({
+            destination: Cesium.Cartesian3.fromDegrees(0.0, 0.0, 20000000.0)
+        });
+
+        status.innerText = "SATELLITE LINK ESTABLISHED";
+        setTimeout(() => {
+            document.getElementById('status-overlay').style.opacity = '0';
+        }, 2000);
+
+    } catch (e) {
+        status.innerHTML = "Imagery Error: " + e.message;
+    }
+}
 
                 status.innerText = "ENGINE ONLINE - Welcome Traveler";
                 // Fade out the status after 3 seconds
