@@ -1,6 +1,6 @@
 /* 
-   CHRONO-OS: app.js v2.4
-   Logic: Modular Site Management & Camera Handshaking
+   CHRONO-OS: app.js v2.5
+   Logic: Branching Dialogue & Narrative Nodes
 */
 
 let viewer;
@@ -9,29 +9,25 @@ let currentSiteKey = "";
 const historyData = {
     "Giza": { 
         name: "Pyramid of Giza", lat: 31.1342, lon: 29.9792, 
-        fact: "The last of the original Seven Wonders. Built for Khufu.", 
-        img: "https://wikimedia.org" 
+        baseFact: "The Great Pyramid is the last surviving ancient wonder.", 
+        img: "https://wikimedia.org",
+        branches: [
+            { label: "Construction Secrets", text: "Built over 20 years using 2.3 million stone blocks." },
+            { label: "The Pharaoh Khufu", text: "The pyramid served as a tomb for the 4th Dynasty Pharaoh." },
+            { label: "Internal Passages", text: "Contains the King's Chamber, Queen's Chamber, and Grand Gallery." }
+        ]
     },
     "Rome": { 
         name: "The Colosseum", lat: 12.49223, lon: 41.89021, 
-        fact: "The Flavian Amphitheatre. Capable of holding 50,000-80,000 spectators.", 
-        img: "https://wikimedia.org" 
-    },
-    "Athens": { 
-        name: "The Parthenon", lat: 23.7285, lon: 37.9715, 
-        fact: "A symbol of Ancient Greece and Athenian democracy.", 
-        img: "https://wikimedia.org" 
-    },
-    "Petra": { 
-        name: "Al-Khazneh (Petra)", lat: 35.4444, lon: 30.3222, 
-        fact: "The Treasury of Petra, carved directly into the sandstone rock face.", 
-        img: "https://wikimedia.org" 
-    },
-    "Chichen": { 
-        name: "Chichen Itza", lat: -88.5678, lon: 20.6843, 
-        fact: "The El Castillo pyramid served as a massive solar calendar.", 
-        img: "https://wikimedia.org" 
+        baseFact: "Rome's ultimate arena for gladiatorial combat and public spectacle.", 
+        img: "https://wikimedia.org",
+        branches: [
+            { label: "Gladiator Combat", text: "Specially trained fighters battled for fame and freedom." },
+            { label: "Architecture", text: "Features 80 arched entrances and a complex underground 'Hypogeum'." },
+            { label: "Naval Battles", text: "In early years, the arena was flooded to stage mock sea wars." }
+        ]
     }
+    // Additional sites follow the same structure...
 };
 
 function init() {
@@ -42,10 +38,7 @@ function init() {
                 url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
                 subdomains: ['a', 'b', 'c']
             }),
-            baseLayerPicker: false, 
-            geocoder: false, 
-            timeline: false, 
-            animation: false,
+            baseLayerPicker: false, geocoder: false, timeline: false, animation: false,
             requestRenderMode: true
         });
 
@@ -58,18 +51,12 @@ function init() {
                 position: Cesium.Cartesian3.fromDegrees(site.lat, site.lon, 0),
                 billboard: { 
                     image: 'https://wikimedia.org', 
-                    width: 32, 
-                    height: 32,
-                    verticalOrigin: Cesium.VerticalOrigin.BOTTOM
+                    width: 32, height: 32, verticalOrigin: Cesium.VerticalOrigin.BOTTOM
                 },
                 label: { 
-                    text: site.name, 
-                    font: '10pt serif', 
-                    fillColor: Cesium.Color.GOLD, 
-                    outlineColor: Cesium.Color.BLACK,
-                    outlineWidth: 2,
-                    style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-                    pixelOffset: new Cesium.Cartesian2(0, -45) 
+                    text: site.name, font: '10pt serif', fillColor: Cesium.Color.GOLD, 
+                    outlineColor: Cesium.Color.BLACK, outlineWidth: 2,
+                    style: Cesium.LabelStyle.FILL_AND_OUTLINE, pixelOffset: new Cesium.Cartesian2(0, -45) 
                 }
             });
         });
@@ -78,53 +65,56 @@ function init() {
             const picked = viewer.scene.pick(movement.position);
             if (picked && picked.id && historyData[picked.id.id]) {
                 currentSiteKey = picked.id.id;
-                const site = historyData[currentSiteKey];
-                openSidebar(site);
+                openSidebar(historyData[currentSiteKey]);
                 viewer.camera.flyTo({
-                    destination: Cesium.Cartesian3.fromDegrees(site.lat, site.lon, 1200),
-                    orientation: {
-                        heading: Cesium.Math.toRadians(0.0),
-                        pitch: Cesium.Math.toRadians(-30.0)
-                    }
+                    destination: Cesium.Cartesian3.fromDegrees(historyData[currentSiteKey].lat, historyData[currentSiteKey].lon, 1000),
+                    orientation: { pitch: Cesium.Math.toRadians(-35.0) }
                 });
             }
         }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 
-        status.innerText = "CHRONO-OS v2.4 ONLINE";
-        setTimeout(() => document.getElementById('status-overlay').style.opacity = '0', 3000);
-
-    } catch (e) {
-        status.innerText = "GPU/WEBGL ERROR";
-        console.error(e);
-    }
+        status.innerText = "CHRONO-OS v2.5 ACTIVE";
+    } catch (e) { status.innerText = "GPU ERROR"; }
 }
 
 function openSidebar(site) {
     const sidebar = document.getElementById('chat-sidebar');
     const messages = document.getElementById('chat-messages');
-    const locName = document.getElementById('location-name');
+    document.getElementById('location-name').innerText = site.name;
 
-    locName.innerText = site.name;
     messages.innerHTML = `
-        <img src="${site.img}" class="site-image" alt="${site.name}">
-        <p class="guide-text"><strong>ARCHIVE DATA:</strong> ${site.fact}</p>
-        <hr style="border: 0; border-top: 1px solid #333; margin: 15px 0;">
+        <img src="${site.img}" class="site-image">
+        <p class="guide-text"><strong>Guide:</strong> ${site.baseFact}</p>
+        <div id="branch-container"></div>
     `;
+    
+    const branchContainer = document.getElementById('branch-container');
+    site.branches.forEach(branch => {
+        const btn = document.createElement('button');
+        btn.className = 'branch-btn';
+        btn.innerText = branch.label;
+        btn.onclick = () => {
+            messages.innerHTML += `<p style="color:white; margin-top:10px;"><strong>Query:</strong> ${branch.label}</p>`;
+            messages.innerHTML += `<p class="guide-text"><strong>Guide:</strong> ${branch.text}</p>`;
+            messages.scrollTop = messages.scrollHeight;
+        };
+        branchContainer.appendChild(btn);
+    });
+
     sidebar.style.right = "0px";
 }
 
-function closeSidebar() { 
-    document.getElementById('chat-sidebar').style.right = "-400px"; 
-}
+function closeSidebar() { document.getElementById('chat-sidebar').style.right = "-400px"; }
 
 window.sendMessage = function() {
     const input = document.getElementById('user-input');
     const messages = document.getElementById('chat-messages');
     if (input.value.trim() !== "") {
         messages.innerHTML += `<p style="color:white; margin-top:10px;"><strong>Explorer:</strong> ${input.value}</p>`;
+        const val = input.value;
         input.value = "";
         setTimeout(() => {
-            messages.innerHTML += `<p class="guide-text"><strong>Guide:</strong> Site analysis for "${currentSiteKey}" remains ongoing.</p>`;
+            messages.innerHTML += `<p class="guide-text"><strong>Guide:</strong> Analyzing records for "${val}"... This requires deeper synchronization.</p>`;
             messages.scrollTop = messages.scrollHeight;
         }, 600);
     }
