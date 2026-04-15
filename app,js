@@ -1,37 +1,110 @@
 /* 
-   CHRONO-OS: app.js v2.5.1
-   Logic: High-Fidelity Branching Data for Colosseum & Giza
+   CHRONO-OS: app.js v2.6
+   Trial Run Alpha: 15 Multi-Site Matrix (Egypt, Italy, Greece)
 */
 
 let viewer;
 let currentSiteKey = "";
 
 const historyData = {
+    // --- EGYPT (5 SITES) ---
     "Giza": { 
         name: "Pyramid of Giza", lat: 31.1342, lon: 29.9792, 
-        baseFact: "The Great Pyramid is the last surviving ancient wonder, built around 2560 BC.", 
+        baseFact: "The Great Pyramid of Khufu, the last surviving Ancient Wonder.", 
         img: "https://wikimedia.org",
-        branches: [
-            { label: "Engineering", text: "The pyramid was aligned to true north with an accuracy of within 3/60th of a degree." },
-            { label: "The Worker Village", text: "Contrary to myth, the pyramids were built by paid laborers, not slaves, who lived in a nearby complex." },
-            { label: "Stellar Alignment", text: "The shafts inside the pyramid point toward Orion’s Belt and the North Star." }
-        ]
+        branches: [{label: "Construction", text: "Built with 2.3 million stone blocks."}, {label: "Alignment", text: "Aligned to true north."}]
     },
-    "Rome": { 
-        name: "The Colosseum", lat: 12.49223, lon: 41.89021, 
-        baseFact: "An iconic symbol of Imperial Rome, the Colosseum could host 80,000 spectators.", 
+    "Luxor": { 
+        name: "Luxor Temple", lat: 32.6391, lon: 25.6995, 
+        baseFact: "A large Ancient Egyptian temple complex located on the east bank of the Nile.", 
         img: "https://wikimedia.org",
-        branches: [
-            { label: "The Hypogeum", text: "The underground network featured 32 animal pens and manual elevators to hoist beasts into the arena." },
-            { label: "Gladiator Classes", text: "Not all fighters were equal; the Murmillo carried heavy shields, while the Retiarius fought with a net and trident." },
-            { label: "The Velarium", text: "A massive retractable awning managed by Roman sailors to shade spectators from the sun." },
-            { label: "Public Executions", text: "Mid-day 'entertainment' often involved 'damnatio ad bestias'—execution by wild animals." }
-        ]
+        branches: [{label: "Amenhotep III", text: "Commissioned the original temple."}, {label: "Obelisks", text: "One remains; the other is in Paris."}]
+    },
+    "AbuSimbel": { 
+        name: "Abu Simbel", lat: 31.6255, lon: 22.3372, 
+        baseFact: "Two massive rock temples built by Ramesses II.", 
+        img: "https://wikimedia.org",
+        branches: [{label: "Relocation", text: "Moved in 1968 to avoid flooding from Aswan Dam."}, {label: "Solar Alignment", text: "Sun illuminates the inner sanctum twice a year."}]
+    },
+    "Karnak": { 
+        name: "Karnak Complex", lat: 32.6573, lon: 25.7188, 
+        baseFact: "The largest religious building ever constructed.", 
+        img: "https://wikimedia.org",
+        branches: [{label: "Hypostyle Hall", text: "Features 134 massive columns."}, {label: "Timeline", text: "Developed over 1,500 years."}]
+    },
+    "ValleyKings": { 
+        name: "Valley of the Kings", lat: 32.6014, lon: 25.7402, 
+        baseFact: "Burial site of New Kingdom pharaohs.", 
+        img: "https://wikimedia.org",
+        branches: [{label: "Tutankhamun", text: "The most famous intact tomb found here."}, {label: "Geography", text: "Chosen for its isolation and 'The Peak' pyramid shape."}]
+    },
+
+    // --- ITALY (5 SITES) ---
+    "Colosseum": { 
+        name: "The Colosseum", lat: 12.4922, lon: 41.8902, 
+        baseFact: "The peak of Roman amphitheatre engineering.", 
+        img: "https://wikimedia.org",
+        branches: [{label: "Gladiators", text: "Home to the Munera games."}, {label: "Spectacle", text: "Could be flooded for mock sea battles."}]
+    },
+    "Pantheon": { 
+        name: "The Pantheon", lat: 12.4769, lon: 41.8986, 
+        baseFact: "Former Roman temple, now a church, known for its massive dome.", 
+        img: "https://wikimedia.org",
+        branches: [{label: "The Dome", text: "The world's largest unreinforced concrete dome."}, {label: "The Oculus", text: "The central opening is the only source of natural light."}]
+    },
+    "Pompeii": { 
+        name: "Pompeii Ruins", lat: 14.4848, lon: 40.7489, 
+        baseFact: "A city preserved in ash following Vesuvius' eruption in 79 AD.", 
+        img: "https://wikimedia.org",
+        branches: [{label: "Vesuvius", text: "The volcano remains active today."}, {label: "Casts", text: "Plaster casts reveal the final moments of victims."}]
+    },
+    "Forum": { 
+        name: "Roman Forum", lat: 12.4853, lon: 41.8925, 
+        baseFact: "The political and social heart of the Roman Empire.", 
+        img: "https://wikimedia.org",
+        branches: [{label: "Curia", text: "The Senate House meeting place."}, {label: "Triumphs", text: "Victor's parades passed through the Via Sacra."}]
+    },
+    "Hadrian": { 
+        name: "Hadrian's Villa", lat: 12.7739, lon: 41.9427, 
+        baseFact: "A massive imperial retreat in Tivoli.", 
+        img: "https://wikimedia.org",
+        branches: [{label: "Canopus", text: "The pool represents a branch of the Nile."}, {label: "Maritime Theater", text: "The Emperor's private island retreat."}]
+    },
+
+    // --- GREECE (5 SITES) ---
+    "Parthenon": { 
+        name: "The Parthenon", lat: 23.7285, lon: 37.9715, 
+        baseFact: "Temple dedicated to Athena on the Acropolis.", 
+        img: "https://wikimedia.org",
+        branches: [{label: "Optical Illusions", text: "The columns swell slightly to look perfectly straight."}, {label: "Destruction", text: "Damaged by an explosion in 1687."}]
+    },
+    "Delphi": { 
+        name: "Oracle of Delphi", lat: 22.5011, lon: 38.4824, 
+        baseFact: "The religious center and 'navel' of the Greek world.", 
+        img: "https://wikimedia.org",
+        branches: [{label: "The Pythia", text: "The priestess who delivered prophecies."}, {label: "Apollo", text: "The god to whom the sanctuary was dedicated."}]
+    },
+    "Knossos": { 
+        name: "Palace of Knossos", lat: 25.1622, lon: 35.2979, 
+        baseFact: "The ceremonial heart of the Minoan civilization on Crete.", 
+        img: "https://wikimedia.org",
+        branches: [{label: "The Labyrinth", text: "Linked to the myth of the Minotaur."}, {label: "Frescoes", text: "Known for vibrant bull-leaping art."}]
+    },
+    "Olympia": { 
+        name: "Ancient Olympia", lat: 21.6273, lon: 37.6384, 
+        baseFact: "Birthplace of the Olympic Games.", 
+        img: "https://wikimedia.org",
+        branches: [{label: "The Stadium", text: "Where athletes competed for olive wreaths."}, {label: "Zeus Temple", text: "Once held one of the Seven Wonders."}]
+    },
+    "Epidaurus": { 
+        name: "Theatre of Epidaurus", lat: 23.0753, lon: 37.5961, 
+        baseFact: "The best-preserved ancient Greek theatre.", 
+        img: "https://wikimedia.org",
+        branches: [{label: "Acoustics", text: "A coin drop at the center can be heard at the top row."}, {label: "Asclepius", text: "The nearby healing sanctuary was the Mayo Clinic of its day."}]
     }
 };
 
 function init() {
-    const status = document.getElementById('status-text');
     try {
         viewer = new Cesium.Viewer('map-container', {
             imageryProvider: new Cesium.UrlTemplateImageryProvider({
@@ -51,12 +124,11 @@ function init() {
                 position: Cesium.Cartesian3.fromDegrees(site.lat, site.lon, 0),
                 billboard: { 
                     image: 'https://wikimedia.org', 
-                    width: 32, height: 32, verticalOrigin: Cesium.VerticalOrigin.BOTTOM
+                    width: 24, height: 24, verticalOrigin: Cesium.VerticalOrigin.BOTTOM
                 },
                 label: { 
-                    text: site.name, font: '10pt serif', fillColor: Cesium.Color.GOLD, 
-                    outlineColor: Cesium.Color.BLACK, outlineWidth: 2,
-                    style: Cesium.LabelStyle.FILL_AND_OUTLINE, pixelOffset: new Cesium.Cartesian2(0, -45) 
+                    text: site.name, font: '9pt serif', fillColor: Cesium.Color.GOLD, 
+                    pixelOffset: new Cesium.Cartesian2(0, -35), showBackground: true, backgroundColor: new Cesium.Color(0,0,0,0.6)
                 }
             });
         });
@@ -67,41 +139,33 @@ function init() {
                 currentSiteKey = picked.id.id;
                 openSidebar(historyData[currentSiteKey]);
                 viewer.camera.flyTo({
-                    destination: Cesium.Cartesian3.fromDegrees(historyData[currentSiteKey].lat, historyData[currentSiteKey].lon, 1000),
+                    destination: Cesium.Cartesian3.fromDegrees(historyData[currentSiteKey].lat, historyData[currentSiteKey].lon, 1200),
                     orientation: { pitch: Cesium.Math.toRadians(-35.0) }
                 });
             }
         }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 
-        status.innerText = "CHRONO-OS v2.5.1 ACTIVE";
-    } catch (e) { status.innerText = "GPU ERROR"; }
+        document.getElementById('status-text').innerText = "CHRONO-OS v2.6 TRIAL RUN ACTIVE";
+    } catch (e) { console.error(e); }
 }
 
 function openSidebar(site) {
-    const sidebar = document.getElementById('chat-sidebar');
     const messages = document.getElementById('chat-messages');
     document.getElementById('location-name').innerText = site.name;
-
-    messages.innerHTML = `
-        <img src="${site.img}" class="site-image">
-        <p class="guide-text"><strong>Guide:</strong> ${site.baseFact}</p>
-        <div id="branch-container"></div>
-    `;
+    messages.innerHTML = `<img src="${site.img}" class="site-image"><p class="guide-text">${site.baseFact}</p><div id="branch-container"></div>`;
     
-    const branchContainer = document.getElementById('branch-container');
     site.branches.forEach(branch => {
         const btn = document.createElement('button');
         btn.className = 'branch-btn';
         btn.innerText = branch.label;
         btn.onclick = () => {
-            messages.innerHTML += `<p style="color:white; margin-top:15px; border-top: 1px solid #222; padding-top: 10px;"><strong>Query:</strong> ${branch.label}</p>`;
+            messages.innerHTML += `<p style="color:white; margin-top:10px; border-top: 1px solid #333; padding-top:5px;"><strong>Query:</strong> ${branch.label}</p>`;
             messages.innerHTML += `<p class="guide-text"><strong>Guide:</strong> ${branch.text}</p>`;
             messages.scrollTop = messages.scrollHeight;
         };
-        branchContainer.appendChild(btn);
+        document.getElementById('branch-container').appendChild(btn);
     });
-
-    sidebar.style.right = "0px";
+    document.getElementById('chat-sidebar').style.right = "0px";
 }
 
 function closeSidebar() { document.getElementById('chat-sidebar').style.right = "-400px"; }
@@ -110,14 +174,12 @@ window.sendMessage = function() {
     const input = document.getElementById('user-input');
     const messages = document.getElementById('chat-messages');
     if (input.value.trim() !== "") {
-        const userQuery = input.value;
-        messages.innerHTML += `<p style="color:white; margin-top:15px; border-top: 1px solid #222; padding-top: 10px;"><strong>Explorer:</strong> ${userQuery}</p>`;
+        messages.innerHTML += `<p style="color:white; margin-top:10px;"><strong>Explorer:</strong> ${input.value}</p>`;
         input.value = "";
-        
         setTimeout(() => {
-            messages.innerHTML += `<p class="guide-text"><strong>Guide:</strong> Searching archive for "${userQuery}"... The Chrono-Link is limited to localized data. Please utilize the branch chips for high-fidelity records.</p>`;
+            messages.innerHTML += `<p class="guide-text"><strong>Guide:</strong> Satellite sync in progress. Use the data chips for immediate retrieval.</p>`;
             messages.scrollTop = messages.scrollHeight;
-        }, 800);
+        }, 600);
     }
 };
 
