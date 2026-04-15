@@ -3,50 +3,112 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>History Traveler - Chrono-OS v2.4</title>
+    <title>History Traveler - Chrono-OS v2.5</title>
     <link rel="manifest" href="manifest.json">
     <link href="https://cesium.com" rel="stylesheet">
     <script src="https://cesium.com"></script>
     <style>
+        /* Base Theming */
         body, html { margin: 0; padding: 0; height: 100%; background: #000; overflow: hidden; color: gold; font-family: 'Georgia', serif; }
         #map-container { width: 100vw; height: 100vh; background: #111; }
+        
+        /* Sidebar Navigation */
         #chat-sidebar {
             position: absolute; top: 0; right: -400px; 
-            width: 320px; height: 100%; background: rgba(10, 10, 10, 0.95);
+            width: 320px; height: 100%; background: rgba(10, 10, 10, 0.98);
             border-left: 1px solid #D4AF37; z-index: 1000;
             transition: right 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); 
             display: flex; flex-direction: column;
-            box-shadow: -5px 0 15px rgba(0,0,0,0.5);
+            box-shadow: -10px 0 20px rgba(0,0,0,0.8);
         }
+
         #chat-header { padding: 20px; border-bottom: 1px solid #D4AF37; background: #111; font-weight: bold; letter-spacing: 1px; }
-        #chat-messages { flex-grow: 1; padding: 15px; overflow-y: auto; font-size: 0.95em; line-height: 1.5; }
-        .guide-text { color: #ccc; font-style: italic; }
-        .site-image { width: 100%; border: 1px solid #444; border-radius: 2px; margin-bottom: 15px; filter: sepia(30%); }
+        #chat-messages { flex-grow: 1; padding: 15px; overflow-y: auto; font-size: 0.95em; line-height: 1.6; }
+        
+        /* Interactive Branch Buttons */
+        #branch-container { margin-top: 15px; display: flex; flex-wrap: wrap; gap: 8px; }
+        .branch-btn {
+            background: #1a1a1a;
+            border: 1px solid #D4AF37;
+            color: gold;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 11px;
+            text-transform: uppercase;
+            transition: all 0.3s ease;
+            border-radius: 2px;
+        }
+        .branch-btn:hover {
+            background: #D4AF37;
+            color: #000;
+            font-weight: bold;
+        }
+
+        /* Typography and Imagery */
+        .guide-text { color: #ccc; font-style: italic; margin-bottom: 10px; }
+        .site-image { 
+            width: 100%; 
+            border: 1px solid #444; 
+            border-radius: 2px; 
+            margin-bottom: 15px; 
+            filter: sepia(20%) contrast(1.1);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+        }
+        
+        /* Input Systems */
         #chat-input-area { padding: 15px; background: #050505; border-top: 1px solid #222; display: flex; }
         input { background: #111; border: 1px solid #333; color: gold; padding: 12px; flex-grow: 1; outline: none; font-size: 14px; }
+        input:focus { border-color: #D4AF37; }
         button#send-btn { background: #D4AF37; color: black; border: none; padding: 0 15px; cursor: pointer; font-weight: bold; }
+        
+        /* Status Overlays */
         #status-overlay { 
             position: absolute; top: 20px; left: 20px; z-index: 100; 
             background: rgba(0,0,0,0.85); padding: 8px 15px; 
             border-left: 3px solid #D4AF37; font-size: 12px;
             transition: opacity 1s ease;
         }
-        .close-link { background: none; color: #666; border: none; padding: 10px; cursor: pointer; font-size: 11px; text-transform: uppercase; }
+
+        .close-link { background: none; color: #666; border: none; padding: 10px; cursor: pointer; font-size: 11px; text-transform: uppercase; text-align: center; width: 100%; }
         .close-link:hover { color: gold; }
+
+        /* Scrollbar Styling for Sidebar */
+        #chat-messages::-webkit-scrollbar { width: 4px; }
+        #chat-messages::-webkit-scrollbar-track { background: #000; }
+        #chat-messages::-webkit-scrollbar-thumb { background: #D4AF37; }
     </style>
 </head>
 <body>
-    <div id="status-overlay">STATUS: <span id="status-text">INITIALIZING...</span></div>
+
+    <div id="status-overlay">CHRONO-LINK: <span id="status-text">SYNCING SATELLITE...</span></div>
+    
     <div id="chat-sidebar">
-        <div id="chat-header">CHRONO-LINK: <span id="location-name">READY</span></div>
-        <div id="chat-messages"><p class="guide-text">Awaiting coordinate selection...</p></div>
+        <div id="chat-header">ACTIVE SITE: <span id="location-name">SEARCHING</span></div>
+        
+        <div id="chat-messages">
+            <p class="guide-text">Select a historical coordinate on the globe to initiate the data stream.</p>
+        </div>
+        
         <div id="chat-input-area">
-            <input type="text" id="user-input" placeholder="Query the site...">
+            <input type="text" id="user-input" placeholder="Query the site data...">
             <button id="send-btn" onclick="sendMessage()">SEND</button>
         </div>
-        <button onclick="closeSidebar()" class="close-link">[ Disconnect ]</button>
+        
+        <button onclick="closeSidebar()" class="close-link">[ Disconnect Link ]</button>
     </div>
+
     <div id="map-container"></div>
+
+    <!-- Modular Script Injection -->
     <script src="app.js"></script>
+    
+    <script>
+        // PWA Service Worker Handshake
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW registration failed:', err));
+            });
+        }
+    </script>
 </body>
 </html>
