@@ -1,90 +1,118 @@
-/* 
-   CHRONO-OS: app.js v2.6.1
-   Feature: Country Jump Navigation & 15-Site Matrix
-*/
-
 let viewer;
 let currentSiteKey = "";
 
+// DATA MATRIX - All Coordinates Verified (Longitude, Latitude)
 const historyData = {
     // --- EGYPT ---
-    "Giza": { name: "Pyramid of Giza", lat: 31.1342, lon: 29.9792, baseFact: "The Great Pyramid of Khufu.", img: "https://wikimedia.org", branches: [{label: "Construction", text: "2.3 million blocks."}, {label: "Age", text: "Built ~2560 BC."}] },
-    "Luxor": { name: "Luxor Temple", lat: 32.6391, lon: 25.6995, baseFact: "East bank Nile temple.", img: "https://wikimedia.org", branches: [{label: "Pharaohs", text: "Amenhotep III & Ramesses II."}] },
-    "AbuSimbel": { name: "Abu Simbel", lat: 31.6255, lon: 22.3372, baseFact: "Rock-cut temples of Ramesses II.", img: "https://wikimedia.org", branches: [{label: "Rescue", text: "Moved in 1968."}] },
-    "Karnak": { name: "Karnak Complex", lat: 32.6573, lon: 25.7188, baseFact: "World's largest religious site.", img: "https://wikimedia.org", branches: [{label: "Columns", text: "134 massive pillars."}] },
-    "ValleyKings": { name: "Valley of the Kings", lat: 32.6014, lon: 25.7402, baseFact: "Royal New Kingdom necropolis.", img: "https://wikimedia.org", branches: [{label: "Tutankhamun", text: "Discovered 1922."}] },
+    "Giza": { name: "Pyramid of Giza", lon: 31.1342, lat: 29.9792, baseFact: "The Great Pyramid of Khufu.", img: "https://upload.wikimedia.org/wikipedia/commons/e/e3/Kheops-Pyramid.jpg", branches: [{label: "Construction", text: "Built from 2.3 million blocks."}, {label: "Age", text: "Completed ~2560 BC."}] },
+    "Luxor": { name: "Luxor Temple", lon: 32.6391, lat: 25.6995, baseFact: "A large Ancient Egyptian temple complex.", img: "", branches: [{label: "Pharaohs", text: "Primarily Amenhotep III and Ramesses II."}] },
+    "AbuSimbel": { name: "Abu Simbel", lon: 31.6255, lat: 22.3372, baseFact: "Two massive rock temples.", img: "", branches: [{label: "Rescue", text: "Relocated in 1968 to avoid flooding."}] },
+    "Karnak": { name: "Karnak Complex", lon: 32.6573, lat: 25.7188, baseFact: "Comprises a vast mix of decayed temples.", img: "", branches: [{label: "Columns", text: "The Great Hypostyle Hall has 134 columns."}] },
+    "ValleyKings": { name: "Valley of the Kings", lon: 32.6014, lat: 25.7402, baseFact: "Burial site for pharaohs for 500 years.", img: "", branches: [{label: "Discovery", text: "KV62 (Tutankhamun) found in 1922."}] },
 
     // --- ITALY ---
-    "Colosseum": { name: "The Colosseum", lat: 12.4922, lon: 41.8902, baseFact: "Roman gladiatorial arena.", img: "https://wikimedia.org", branches: [{label: "Gladiators", text: "Fighters for the mob."}, {label: "Architecture", text: "Arched concrete system."}] },
-    "Pantheon": { name: "The Pantheon", lat: 12.4769, lon: 41.8986, baseFact: "Best preserved Roman temple.", img: "https://wikimedia.org", branches: [{label: "The Dome", text: "Unreinforced concrete."}] },
-    "Pompeii": { name: "Pompeii", lat: 14.4848, lon: 40.7489, baseFact: "Frozen in time by Vesuvius.", img: "https://wikimedia.org", branches: [{label: "The Eruption", text: "79 AD event."}] },
-    "Forum": { name: "Roman Forum", lat: 12.4853, lon: 41.8925, baseFact: "Social heart of Rome.", img: "https://wikimedia.org", branches: [{label: "Politics", text: "Senate meetings."}] },
-    "Hadrian": { name: "Hadrian's Villa", lat: 12.7739, lon: 41.9427, baseFact: "Imperial retreat at Tivoli.", img: "https://wikimedia.org", branches: [{label: "Retreat", text: "Private island theater."}] },
+    "Colosseum": { name: "The Colosseum", lon: 12.4922, lat: 41.8902, baseFact: "The largest ancient amphitheatre ever built.", img: "https://upload.wikimedia.org/wikipedia/commons/d/de/Colosseum_in_Rome%2C_Italy_-_April_2007.jpg", branches: [{label: "Gladiators", text: "Hosted games for over 500 years."}, {label: "Capacity", text: "Could hold up to 80,000 spectators."}] },
+    "Pantheon": { name: "The Pantheon", lon: 12.4769, lat: 41.8986, baseFact: "Temple to all the gods of ancient Rome.", img: "", branches: [{label: "The Dome", text: "Still the world's largest unreinforced concrete dome."}] },
+    "Pompeii": { name: "Pompeii", lon: 14.4848, lat: 40.7489, baseFact: "City buried by Mount Vesuvius in 79 AD.", img: "", branches: [{label: "Preservation", text: "Ash preserved the city in incredible detail."}] },
+    "Forum": { name: "Roman Forum", lon: 12.4853, lat: 41.8925, baseFact: "The center of Roman public life.", img: "", branches: [{label: "Politics", text: "Site of the Comitium and the Senate House."}] },
+    "Hadrian": { name: "Hadrian's Villa", lon: 12.7739, lat: 41.9427, baseFact: "A complex of over 30 buildings at Tivoli.", img: "", branches: [{label: "Luxury", text: "It was a virtual 'city' for the Emperor."}] },
 
     // --- GREECE ---
-    "Parthenon": { name: "The Parthenon", lat: 23.7285, lon: 37.9715, baseFact: "Iconic Athenian temple.", img: "https://wikimedia.org", branches: [{label: "Democracy", text: "Symbol of Athens."}] },
-    "Delphi": { name: "Delphi", lat: 22.5011, lon: 38.4824, baseFact: "Center of the Greek world.", img: "https://wikimedia.org", branches: [{label: "Prophecy", text: "Home of the Pythia."}] },
-    "Knossos": { name: "Knossos", lat: 25.1622, lon: 35.2979, baseFact: "Minoan palace on Crete.", img: "https://wikimedia.org", branches: [{label: "Minotaur", text: "The Labyrinth myth."}] },
-    "Olympia": { name: "Olympia", lat: 21.6273, lon: 37.6384, baseFact: "Home of the Olympic Games.", img: "https://wikimedia.org", branches: [{label: "Athletics", text: "Started 776 BC."}] },
-    "Epidaurus": { name: "Epidaurus", lat: 23.0753, lon: 37.5961, baseFact: "Perfect ancient theater.", img: "https://wikimedia.org", branches: [{label: "Acoustics", text: "Perfect sound."}] }
+    "Parthenon": { name: "The Parthenon", lon: 23.7285, lat: 37.9715, baseFact: "Temple on the Athenian Acropolis.", img: "https://upload.wikimedia.org/wikipedia/commons/d/da/The_Parthenon_in_Athens.jpg", branches: [{label: "Goddess", text: "Dedicated to Athena Parthenos."}] },
+    "Delphi": { name: "Delphi", lon: 22.5011, lat: 38.4824, baseFact: "The site of the Delphic oracle.", img: "", branches: [{label: "Omphalos", text: "Believed to be the center of the world."}] },
+    "Knossos": { name: "Knossos", lon: 25.1622, lat: 35.2979, baseFact: "The ceremonial center of Minoan culture.", img: "", branches: [{label: "Labyrinth", text: "Linked to the legend of the Minotaur."}] },
+    "Olympia": { name: "Olympia", lon: 21.6273, lat: 37.6384, baseFact: "The site of the first Olympic Games.", img: "", branches: [{label: "Zeus", text: "Home to the Statue of Zeus, a World Wonder."}] },
+    "Epidaurus": { name: "Epidaurus", lon: 23.0753, lat: 37.5961, baseFact: "Famous for its sanctuary and theater.", img: "", branches: [{label: "Sanctuary", text: "A center for healing in antiquity."}] }
 };
 
 function init() {
-    viewer = new Cesium.Viewer('map-container', {
-        imageryProvider: new Cesium.UrlTemplateImageryProvider({
-            url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-            subdomains: ['a', 'b', 'c']
-        }),
-        baseLayerPicker: false, geocoder: false, timeline: false, animation: false, requestRenderMode: true
-    });
+    const statusText = document.getElementById('status-text');
 
-    viewer.scene.primitives.add(Cesium.createOsmBuildings());
-
-    Object.keys(historyData).forEach(key => {
-        const site = historyData[key];
-        viewer.entities.add({
-            id: key,
-            position: Cesium.Cartesian3.fromDegrees(site.lat, site.lon, 0),
-            billboard: { image: 'https://wikimedia.org', width: 24, height: 24 },
-            label: { text: site.name, font: '9pt serif', fillColor: Cesium.Color.GOLD, pixelOffset: new Cesium.Cartesian2(0, -35), showBackground: true, backgroundColor: new Cesium.Color(0,0,0,0.6) }
+    try {
+        viewer = new Cesium.Viewer('map-container', {
+            imageryProvider: new Cesium.UrlTemplateImageryProvider({
+                url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                subdomains: ['a', 'b', 'c']
+            }),
+            baseLayerPicker: false, geocoder: false, timeline: false, animation: false,
+            requestRenderMode: true // VITAL for mobile performance
         });
-    });
 
-    viewer.screenSpaceEventHandler.setInputAction((movement) => {
-        const picked = viewer.scene.pick(movement.position);
-        if (picked && picked.id && historyData[picked.id.id]) {
-            currentSiteKey = picked.id.id;
-            openSidebar(historyData[currentSiteKey]);
-            viewer.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(historyData[currentSiteKey].lat, historyData[currentSiteKey].lon, 1200), orientation: { pitch: Cesium.Math.toRadians(-35.0) } });
-        }
-    }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+        // Add 3D OSM Buildings (Optional/Safe)
+        viewer.scene.primitives.add(Cesium.createOsmBuildings());
+
+        // Place Markers
+        Object.keys(historyData).forEach(key => {
+            const site = historyData[key];
+            viewer.entities.add({
+                id: key,
+                position: Cesium.Cartesian3.fromDegrees(site.lon, site.lat, 0),
+                point: { color: Cesium.Color.GOLD, pixelSize: 10, outlineColor: Cesium.Color.BLACK, outlineWidth: 2 },
+                label: { 
+                    text: site.name, 
+                    font: '10pt serif', 
+                    fillColor: Cesium.Color.GOLD, 
+                    pixelOffset: new Cesium.Cartesian2(0, -30),
+                    showBackground: true,
+                    backgroundColor: new Cesium.Color(0,0,0,0.7)
+                }
+            });
+        });
+
+        // Click Logic
+        viewer.screenSpaceEventHandler.setInputAction((movement) => {
+            const picked = viewer.scene.pick(movement.position);
+            if (picked && picked.id && historyData[picked.id.id]) {
+                currentSiteKey = picked.id.id;
+                openSidebar(historyData[currentSiteKey]);
+                
+                viewer.camera.flyTo({ 
+                    destination: Cesium.Cartesian3.fromDegrees(historyData[currentSiteKey].lon, historyData[currentSiteKey].lat, 1200), 
+                    orientation: { pitch: Cesium.Math.toRadians(-35.0) } 
+                });
+            }
+        }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+
+        statusText.innerText = "ONLINE";
+
+    } catch (e) {
+        statusText.innerText = "GPU ERROR - 2D MODE";
+        console.error(e);
+    }
 }
 
 function flyToRegion(region) {
     const targets = {
-        'Egypt': { lat: 31.13, lon: 29.97, alt: 500000 },
-        'Italy': { lat: 12.49, lon: 41.89, alt: 500000 },
-        'Greece': { lat: 23.72, lon: 37.97, alt: 500000 },
-        'Global': { lat: 0, lon: 0, alt: 20000000 }
+        'Egypt': { lon: 31.13, lat: 29.97, alt: 500000 },
+        'Italy': { lon: 12.49, lat: 41.89, alt: 500000 },
+        'Greece': { lon: 23.72, lat: 37.97, alt: 500000 },
+        'Global': { lon: 0, lat: 0, alt: 20000000 }
     };
     const t = targets[region];
-    viewer.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(t.lat, t.lon, t.alt) });
+    viewer.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(t.lon, t.lat, t.alt) });
 }
 
 function openSidebar(site) {
     const messages = document.getElementById('chat-messages');
     document.getElementById('location-name').innerText = site.name;
-    messages.innerHTML = `<img src="${site.img}" class="site-image"><p>${site.baseFact}</p><div id="branch-container"></div>`;
+    
+    messages.innerHTML = `
+        <img src="${site.img}" class="site-image" onerror="this.src='https://via.placeholder.com/300x150/111/gold?text=ARCHIVE+IMAGE'">
+        <p>${site.baseFact}</p>
+        <div id="branch-container"></div>
+    `;
+
     site.branches.forEach(branch => {
         const btn = document.createElement('button');
         btn.className = 'branch-btn';
         btn.innerText = branch.label;
         btn.onclick = () => {
-            messages.innerHTML += `<p style="color:white; margin-top:10px; border-top: 1px solid #333; padding-top:5px;"><strong>Query:</strong> ${branch.label}</p><p><strong>Guide:</strong> ${branch.text}</p>`;
+            messages.innerHTML += `<p style="color:white; margin-top:10px; border-top: 1px solid #333; padding-top:10px;"><strong>Query:</strong> ${branch.label}</p><p><strong>Guide:</strong> ${branch.text}</p>`;
             messages.scrollTop = messages.scrollHeight;
         };
         document.getElementById('branch-container').appendChild(btn);
     });
+    
     document.getElementById('chat-sidebar').style.right = "0px";
 }
 
@@ -92,9 +120,12 @@ function closeSidebar() { document.getElementById('chat-sidebar').style.right = 
 
 function sendMessage() {
     const input = document.getElementById('user-input');
+    const messages = document.getElementById('chat-messages');
     if (input.value.trim() !== "") {
-        document.getElementById('chat-messages').innerHTML += `<p style="color:white; margin-top:10px;"><strong>You:</strong> ${input.value}</p>`;
+        messages.innerHTML += `<p style="color:white; margin-top:10px;"><strong>You:</strong> ${input.value}</p>`;
+        messages.innerHTML += `<p><strong>Guide:</strong> The archives are processing your request regarding ${currentSiteKey || 'this era'}.</p>`;
         input.value = "";
+        messages.scrollTop = messages.scrollHeight;
     }
 }
 
