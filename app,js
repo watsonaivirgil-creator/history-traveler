@@ -1,41 +1,133 @@
-const initCesium = async () => {
-    try {
-        // Use a known public demo token to force the globe to show
-        Cesium.Ion.defaultAccessToken = ''; 
+/* 
+   CHRONO-OS: app.js v2.4
+   Logic: Modular Site Management & Camera Handshaking
+*/
 
-        const viewer = new Cesium.Viewer('map-container', {
-            // This forces a simple 2D map if 3D fails
-            terrainProvider: await Cesium.createWorldTerrainAsync(),
-            animation: false,
-            timeline: false,
-            baseLayerPicker: true,
-            navigationHelpButton: false,
-            skyBox: true, // This should show stars even if the map fails
-        });
+let viewer;
+let currentSiteKey = "";
 
-        // 3D Buildings Layer
-        const osmBuildings = await Cesium.createOsmBuildingsAsync();
-        viewer.scene.primitives.add(osmBuildings);
-
-        // Destination: The Great Pyramid of Giza
-        viewer.camera.flyTo({
-            destination: Cesium.Cartesian3.fromDegrees(31.1342, 29.9792, 2000),
-            orientation: {
-                heading: Cesium.Math.toRadians(0),
-                pitch: Cesium.Math.toRadians(-35),
-                roll: 0.0
-            },
-            duration: 3
-        });
-
-        console.log("Cesium Engine Started Successfully");
-
-    } catch (error) {
-        console.error("Cesium Engine Error:", error);
-        document.body.innerHTML += `<div style="color:white; background:red; position:absolute; top:100px; left:20px; z-index:9999; padding:10px;">
-            CRITICAL ERROR: ${error.message}
-        </div>`;
+const historyData = {
+    "Giza": { 
+        name: "Pyramid of Giza", lat: 31.1342, lon: 29.9792, 
+        fact: "The last of the original Seven Wonders. Built for Khufu.", 
+        img: "https://wikimedia.org" 
+    },
+    "Rome": { 
+        name: "The Colosseum", lat: 12.49223, lon: 41.89021, 
+        fact: "The Flavian Amphitheatre. Capable of holding 50,000-80,000 spectators.", 
+        img: "https://wikimedia.org" 
+    },
+    "Athens": { 
+        name: "The Parthenon", lat: 23.7285, lon: 37.9715, 
+        fact: "A symbol of Ancient Greece and Athenian democracy.", 
+        img: "https://wikimedia.org" 
+    },
+    "Petra": { 
+        name: "Al-Khazneh (Petra)", lat: 35.4444, lon: 30.3222, 
+        fact: "The Treasury of Petra, carved directly into the sandstone rock face.", 
+        img: "https://wikimedia.org" 
+    },
+    "Chichen": { 
+        name: "Chichen Itza", lat: -88.5678, lon: 20.6843, 
+        fact: "The El Castillo pyramid served as a massive solar calendar.", 
+        img: "https://wikimedia.org" 
     }
 };
 
-window.onload = initCesium;
+function init() {
+    const status = document.getElementById('status-text');
+    try {
+        viewer = new Cesium.Viewer('map-container', {
+            imageryProvider: new Cesium.UrlTemplateImageryProvider({
+                url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                subdomains: ['a', 'b', 'c']
+            }),
+            baseLayerPicker: false, 
+            geocoder: false, 
+            timeline: false, 
+            animation: false,
+            requestRenderMode: true
+        });
+
+        viewer.scene.primitives.add(Cesium.createOsmBuildings());
+
+        Object.keys(historyData).forEach(key => {
+            const site = historyData[key];
+            viewer.entities.add({
+                id: key,
+                position: Cesium.Cartesian3.fromDegrees(site.lat, site.lon, 0),
+                billboard: { 
+                    image: 'https://wikimedia.org', 
+                    width: 32, 
+                    height: 32,
+                    verticalOrigin: Cesium.VerticalOrigin.BOTTOM
+                },
+                label: { 
+                    text: site.name, 
+                    font: '10pt serif', 
+                    fillColor: Cesium.Color.GOLD, 
+                    outlineColor: Cesium.Color.BLACK,
+                    outlineWidth: 2,
+                    style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+                    pixelOffset: new Cesium.Cartesian2(0, -45) 
+                }
+            });
+        });
+
+        viewer.screenSpaceEventHandler.setInputAction((movement) => {
+            const picked = viewer.scene.pick(movement.position);
+            if (picked && picked.id && historyData[picked.id.id]) {
+                currentSiteKey = picked.id.id;
+                const site = historyData[currentSiteKey];
+                openSidebar(site);
+                viewer.camera.flyTo({
+                    destination: Cesium.Cartesian3.fromDegrees(site.lat, site.lon, 1200),
+                    orientation: {
+                        heading: Cesium.Math.toRadians(0.0),
+                        pitch: Cesium.Math.toRadians(-30.0)
+                    }
+                });
+            }
+        }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+
+        status.innerText = "CHRONO-OS v2.4 ONLINE";
+        setTimeout(() => document.getElementById('status-overlay').style.opacity = '0', 3000);
+
+    } catch (e) {
+        status.innerText = "GPU/WEBGL ERROR";
+        console.error(e);
+    }
+}
+
+function openSidebar(site) {
+    const sidebar = document.getElementById('chat-sidebar');
+    const messages = document.getElementById('chat-messages');
+    const locName = document.getElementById('location-name');
+
+    locName.innerText = site.name;
+    messages.innerHTML = `
+        <img src="${site.img}" class="site-image" alt="${site.name}">
+        <p class="guide-text"><strong>ARCHIVE DATA:</strong> ${site.fact}</p>
+        <hr style="border: 0; border-top: 1px solid #333; margin: 15px 0;">
+    `;
+    sidebar.style.right = "0px";
+}
+
+function closeSidebar() { 
+    document.getElementById('chat-sidebar').style.right = "-400px"; 
+}
+
+window.sendMessage = function() {
+    const input = document.getElementById('user-input');
+    const messages = document.getElementById('chat-messages');
+    if (input.value.trim() !== "") {
+        messages.innerHTML += `<p style="color:white; margin-top:10px;"><strong>Explorer:</strong> ${input.value}</p>`;
+        input.value = "";
+        setTimeout(() => {
+            messages.innerHTML += `<p class="guide-text"><strong>Guide:</strong> Site analysis for "${currentSiteKey}" remains ongoing.</p>`;
+            messages.scrollTop = messages.scrollHeight;
+        }, 600);
+    }
+};
+
+window.onload = init;
