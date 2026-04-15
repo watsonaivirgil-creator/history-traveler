@@ -3,147 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>History Traveler - Stable</title>
-    
-    <link href="https://cesium.com/downloads/cesiumjs/releases/1.105/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
-    <script src="https://cesium.com/downloads/cesiumjs/releases/1.105/Build/Cesium/Cesium.js"></script>
-    
+    <title>History Traveler - Chrono-OS v2.4</title>
+    <link rel="manifest" href="manifest.json">
+    <link href="https://cesium.com" rel="stylesheet">
+    <script src="https://cesium.com"></script>
     <style>
-        body, html { margin: 0; padding: 0; height: 100%; background: #000; overflow: hidden; color: gold; font-family: 'serif'; }
+        body, html { margin: 0; padding: 0; height: 100%; background: #000; overflow: hidden; color: gold; font-family: 'Georgia', serif; }
         #map-container { width: 100vw; height: 100vh; background: #111; }
-        
         #chat-sidebar {
             position: absolute; top: 0; right: -400px; 
-            width: 320px; height: 100%; background: rgba(15, 15, 15, 0.98);
-            border-left: 2px solid #D4AF37; z-index: 1000;
-            transition: right 0.5s ease; display: flex; flex-direction: column;
+            width: 320px; height: 100%; background: rgba(10, 10, 10, 0.95);
+            border-left: 1px solid #D4AF37; z-index: 1000;
+            transition: right 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); 
+            display: flex; flex-direction: column;
             box-shadow: -5px 0 15px rgba(0,0,0,0.5);
         }
-
-        #chat-header { padding: 15px; border-bottom: 1px solid #D4AF37; background: #1a1a1a; font-weight: bold; }
-        #chat-messages { flex-grow: 1; padding: 15px; overflow-y: auto; font-style: italic; font-size: 0.9em; }
-        #chat-input-area { padding: 15px; border-top: 1px solid #333; display: flex; }
-        
-        input { background: #000; border: 1px solid #D4AF37; color: gold; padding: 10px; flex-grow: 1; outline: none; }
-        button#send-btn { background: #D4AF37; color: black; border: none; padding: 10px; cursor: pointer; font-weight: bold; }
-        
-        #status-overlay { position: absolute; top: 20px; left: 20px; z-index: 100; background: rgba(0,0,0,0.9); padding: 10px; border: 1px solid #D4AF37; border-radius: 4px; }
+        #chat-header { padding: 20px; border-bottom: 1px solid #D4AF37; background: #111; font-weight: bold; letter-spacing: 1px; }
+        #chat-messages { flex-grow: 1; padding: 15px; overflow-y: auto; font-size: 0.95em; line-height: 1.5; }
+        .guide-text { color: #ccc; font-style: italic; }
+        .site-image { width: 100%; border: 1px solid #444; border-radius: 2px; margin-bottom: 15px; filter: sepia(30%); }
+        #chat-input-area { padding: 15px; background: #050505; border-top: 1px solid #222; display: flex; }
+        input { background: #111; border: 1px solid #333; color: gold; padding: 12px; flex-grow: 1; outline: none; font-size: 14px; }
+        button#send-btn { background: #D4AF37; color: black; border: none; padding: 0 15px; cursor: pointer; font-weight: bold; }
+        #status-overlay { 
+            position: absolute; top: 20px; left: 20px; z-index: 100; 
+            background: rgba(0,0,0,0.85); padding: 8px 15px; 
+            border-left: 3px solid #D4AF37; font-size: 12px;
+            transition: opacity 1s ease;
+        }
+        .close-link { background: none; color: #666; border: none; padding: 10px; cursor: pointer; font-size: 11px; text-transform: uppercase; }
+        .close-link:hover { color: gold; }
     </style>
 </head>
 <body>
-
-    <div id="status-overlay"><strong>CHRONO-OS:</strong> <span id="status-text">WAITING FOR CORE...</span></div>
-    
+    <div id="status-overlay">STATUS: <span id="status-text">INITIALIZING...</span></div>
     <div id="chat-sidebar">
-        <div id="chat-header">LINK: <span id="location-name">None</span></div>
-        <div id="chat-messages"><p>Select a gold Chrono-Point to begin.</p></div>
+        <div id="chat-header">CHRONO-LINK: <span id="location-name">READY</span></div>
+        <div id="chat-messages"><p class="guide-text">Awaiting coordinate selection...</p></div>
         <div id="chat-input-area">
-            <input type="text" id="user-input" placeholder="Ask...">
-            <button id="send-btn">SEND</button>
+            <input type="text" id="user-input" placeholder="Query the site...">
+            <button id="send-btn" onclick="sendMessage()">SEND</button>
         </div>
-        <button onclick="closeSidebar()" style="background:none; color:grey; border:none; padding:10px; cursor:pointer;">[ Close ]</button>
+        <button onclick="closeSidebar()" class="close-link">[ Disconnect ]</button>
     </div>
-
     <div id="map-container"></div>
-
-    <script>
-        var viewer;
-        var currentSiteKey = "";
-
-        var historyData = {
-            "Giza": { name: "Great Pyramid of Giza", lat: 31.1342, lon: 29.9792, fact: "The only surviving wonder of the ancient world." },
-            "Rome": { name: "The Colosseum", lat: 12.4922, lon: 41.8902, fact: "The epicentre of Roman architecture." },
-            "Athens": { name: "The Parthenon", lat: 23.7285, lon: 37.9715, fact: "Dedicated to the goddess Athena." }
-        };
-
-        function startEngine() {
-            var status = document.getElementById('status-text');
-            
-            // Handshake verification
-            if (typeof Cesium === 'undefined') {
-                status.innerText = "RETRYING HANDSHAKE...";
-                setTimeout(startEngine, 1000);
-                return;
-            }
-
-            try {
-                status.innerText = "CORE DETECTED. INITIALIZING 3D...";
-                
-                viewer = new Cesium.Viewer('map-container', {
-                    imageryProvider: new Cesium.UrlTemplateImageryProvider({
-                        url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-                        subdomains: ['a', 'b', 'c']
-                    }),
-                    baseLayerPicker: false, geocoder: false, timeline: false, animation: false,
-                    requestRenderMode: true // VITAL for mobile/Chromebook performance
-                });
-
-                // Add 3D OSM Buildings (Safely)
-                viewer.scene.primitives.add(Cesium.createOsmBuildings());
-
-                // Populate Chrono-Points
-                Object.keys(historyData).forEach(function(key) {
-                    var site = historyData[key];
-                    viewer.entities.add({
-                        id: key,
-                        position: Cesium.Cartesian3.fromDegrees(site.lat, site.lon, 50),
-                        label: { text: site.name, font: '12pt serif', fillColor: Cesium.Color.GOLD, pixelOffset: new Cesium.Cartesian2(0, -40) },
-                        point: { pixelSize: 10, color: Cesium.Color.GOLD, outlineColor: Cesium.Color.BLACK, outlineWidth: 2 }
-                    });
-                });
-
-                // Interaction Logic
-                viewer.screenSpaceEventHandler.setInputAction(function(movement) {
-                    var picked = viewer.scene.pick(movement.position);
-                    if (picked && picked.id && historyData[picked.id.id]) {
-                        var site = historyData[picked.id.id];
-                        currentSiteKey = picked.id.id;
-                        openSidebar(site.name, site.fact);
-                        
-                        viewer.camera.flyTo({
-                            destination: Cesium.Cartesian3.fromDegrees(site.lat, site.lon, 800),
-                            orientation: { pitch: Cesium.Math.toRadians(-25.0) }
-                        });
-                    }
-                }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
-
-                status.innerText = "SYSTEM ACTIVE";
-                setTimeout(function() { document.getElementById('status-overlay').style.display='none'; }, 2000);
-                initChat();
-
-            } catch (e) {
-                status.innerText = "GPU ERROR: " + e.message;
-            }
-        }
-
-        function openSidebar(name, fact) {
-            document.getElementById('location-name').innerText = name;
-            document.getElementById('chat-messages').innerHTML = "<p><strong>Guide:</strong> " + fact + "</p>";
-            document.getElementById('chat-sidebar').style.right = "0px";
-        }
-
-        function closeSidebar() { document.getElementById('chat-sidebar').style.right = "-400px"; }
-
-        function initChat() {
-            document.getElementById('send-btn').onclick = sendMessage;
-            document.getElementById('user-input').onkeypress = function(e) { if(e.key === 'Enter') sendMessage(); };
-        }
-
-        function sendMessage() {
-            var input = document.getElementById('user-input');
-            var messages = document.getElementById('chat-messages');
-            if (input.value.trim() !== "") {
-                messages.innerHTML += "<p style='color:white; font-style:normal;'><strong>You:</strong> " + input.value + "</p>";
-                setTimeout(function() {
-                    messages.innerHTML += "<p><strong>Guide:</strong> Every stone here at " + currentSiteKey + " holds a story.</p>";
-                    messages.scrollTop = messages.scrollHeight;
-                }, 800);
-                input.value = "";
-            }
-        }
-
-        // Standard load trigger
-        window.onload = startEngine;
-    </script>
+    <script src="app.js"></script>
 </body>
 </html>
