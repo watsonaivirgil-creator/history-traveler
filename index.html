@@ -5,13 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>History Traveler - Chrono-OS v2.6.1</title>
     <link rel="manifest" href="manifest.json">
+    
+    <!-- MANDATORY: FULL PATHS TO THE 3D ENGINE FILES -->
     <link href="https://cesium.com" rel="stylesheet">
     <script src="https://cesium.com"></script>
+    
     <style>
         body, html { margin: 0; padding: 0; height: 100%; background: #000; overflow: hidden; color: gold; font-family: 'Georgia', serif; }
         #map-container { width: 100vw; height: 100vh; background: #111; }
         
-        /* Country Jump Menu */
         #nav-overlay { 
             position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); 
             z-index: 100; display: flex; gap: 10px; background: rgba(0,0,0,0.8); 
@@ -25,7 +27,6 @@
         }
         .nav-btn:hover { border-color: #D4AF37; color: gold; background: rgba(212, 175, 55, 0.1); }
 
-        /* Sidebar Styling */
         #chat-sidebar {
             position: absolute; top: 0; right: -400px; 
             width: 320px; height: 100%; background: rgba(10, 10, 10, 0.98);
