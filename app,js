@@ -1,6 +1,6 @@
 /* 
-   CHRONO-OS: app.js v2.5
-   Logic: Branching Dialogue & Narrative Nodes
+   CHRONO-OS: app.js v2.5.1
+   Logic: High-Fidelity Branching Data for Colosseum & Giza
 */
 
 let viewer;
@@ -9,25 +9,25 @@ let currentSiteKey = "";
 const historyData = {
     "Giza": { 
         name: "Pyramid of Giza", lat: 31.1342, lon: 29.9792, 
-        baseFact: "The Great Pyramid is the last surviving ancient wonder.", 
+        baseFact: "The Great Pyramid is the last surviving ancient wonder, built around 2560 BC.", 
         img: "https://wikimedia.org",
         branches: [
-            { label: "Construction Secrets", text: "Built over 20 years using 2.3 million stone blocks." },
-            { label: "The Pharaoh Khufu", text: "The pyramid served as a tomb for the 4th Dynasty Pharaoh." },
-            { label: "Internal Passages", text: "Contains the King's Chamber, Queen's Chamber, and Grand Gallery." }
+            { label: "Engineering", text: "The pyramid was aligned to true north with an accuracy of within 3/60th of a degree." },
+            { label: "The Worker Village", text: "Contrary to myth, the pyramids were built by paid laborers, not slaves, who lived in a nearby complex." },
+            { label: "Stellar Alignment", text: "The shafts inside the pyramid point toward Orion’s Belt and the North Star." }
         ]
     },
     "Rome": { 
         name: "The Colosseum", lat: 12.49223, lon: 41.89021, 
-        baseFact: "Rome's ultimate arena for gladiatorial combat and public spectacle.", 
+        baseFact: "An iconic symbol of Imperial Rome, the Colosseum could host 80,000 spectators.", 
         img: "https://wikimedia.org",
         branches: [
-            { label: "Gladiator Combat", text: "Specially trained fighters battled for fame and freedom." },
-            { label: "Architecture", text: "Features 80 arched entrances and a complex underground 'Hypogeum'." },
-            { label: "Naval Battles", text: "In early years, the arena was flooded to stage mock sea wars." }
+            { label: "The Hypogeum", text: "The underground network featured 32 animal pens and manual elevators to hoist beasts into the arena." },
+            { label: "Gladiator Classes", text: "Not all fighters were equal; the Murmillo carried heavy shields, while the Retiarius fought with a net and trident." },
+            { label: "The Velarium", text: "A massive retractable awning managed by Roman sailors to shade spectators from the sun." },
+            { label: "Public Executions", text: "Mid-day 'entertainment' often involved 'damnatio ad bestias'—execution by wild animals." }
         ]
     }
-    // Additional sites follow the same structure...
 };
 
 function init() {
@@ -73,7 +73,7 @@ function init() {
             }
         }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 
-        status.innerText = "CHRONO-OS v2.5 ACTIVE";
+        status.innerText = "CHRONO-OS v2.5.1 ACTIVE";
     } catch (e) { status.innerText = "GPU ERROR"; }
 }
 
@@ -94,7 +94,7 @@ function openSidebar(site) {
         btn.className = 'branch-btn';
         btn.innerText = branch.label;
         btn.onclick = () => {
-            messages.innerHTML += `<p style="color:white; margin-top:10px;"><strong>Query:</strong> ${branch.label}</p>`;
+            messages.innerHTML += `<p style="color:white; margin-top:15px; border-top: 1px solid #222; padding-top: 10px;"><strong>Query:</strong> ${branch.label}</p>`;
             messages.innerHTML += `<p class="guide-text"><strong>Guide:</strong> ${branch.text}</p>`;
             messages.scrollTop = messages.scrollHeight;
         };
@@ -110,13 +110,14 @@ window.sendMessage = function() {
     const input = document.getElementById('user-input');
     const messages = document.getElementById('chat-messages');
     if (input.value.trim() !== "") {
-        messages.innerHTML += `<p style="color:white; margin-top:10px;"><strong>Explorer:</strong> ${input.value}</p>`;
-        const val = input.value;
+        const userQuery = input.value;
+        messages.innerHTML += `<p style="color:white; margin-top:15px; border-top: 1px solid #222; padding-top: 10px;"><strong>Explorer:</strong> ${userQuery}</p>`;
         input.value = "";
+        
         setTimeout(() => {
-            messages.innerHTML += `<p class="guide-text"><strong>Guide:</strong> Analyzing records for "${val}"... This requires deeper synchronization.</p>`;
+            messages.innerHTML += `<p class="guide-text"><strong>Guide:</strong> Searching archive for "${userQuery}"... The Chrono-Link is limited to localized data. Please utilize the branch chips for high-fidelity records.</p>`;
             messages.scrollTop = messages.scrollHeight;
-        }, 600);
+        }, 800);
     }
 };
 
