@@ -1,21 +1,22 @@
 {
-  "short_name": "Traveler",
-  "name": "History Traveler: The Infinite Journey",
-  "description": "Immersive 3D historical exploration.",
+  "short_name": "ChronoOS",
+  "name": "History Traveler: Chrono-OS",
+  "description": "3D Historical Exploration Interface",
   "icons": [
     {
-      "src": "icon-192.png",
+      "src": "https://wikimedia.org",
       "type": "image/png",
       "sizes": "192x192"
     },
     {
-      "src": "icon-512.png",
+      "src": "https://wikimedia.org",
       "type": "image/png",
       "sizes": "512x512"
     }
   ],
   "start_url": "/",
-  "background_color": "#0F172A",
   "display": "standalone",
-  "theme_color": "#D4AF37"
+  "theme_color": "#000000",
+  "background_color": "#000000",
+  "orientation": "any"
 }
