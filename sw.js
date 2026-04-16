@@ -1,11 +1,10 @@
-const CACHE_NAME = 'chrono-os-v2.6.2'; // Bumped version to match app
+/* CHRONO-OS SERVICE WORKER v2.9.2 */
+const CACHE_NAME = 'chrono-os-v2.9.2';
 const ASSETS = [
   '/',
   '/index.html',
   '/app.js',
-  '/manifest.json',
-  'https://cesium.com/downloads/cesiumjs/releases/1.105/Build/Cesium/Widgets/widgets.css',
-  'https://cesium.com/downloads/cesiumjs/releases/1.105/Build/Cesium/Cesium.js'
+  '/manifest.json'
 ];
 
 self.addEventListener('install', (event) => {
@@ -17,14 +16,30 @@ self.addEventListener('install', (event) => {
 self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
-      const fetchPromise = fetch(event.request).then((networkResponse) => {
-        // Update cache with fresh version
+      // Return from cache if found
+      if (cachedResponse) {
+        return cachedResponse;
+      }
+
+      // Otherwise fetch from network
+      return fetch(event.request).then((networkResponse) => {
+        // Only cache valid, same-origin responses
+        if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
+          return networkResponse;
+        }
+
+        // CRITICAL FIX: Clone the response immediately. 
+        // One is for the browser, one is for the cache.
+        const responseToCache = networkResponse.clone();
+
         caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, networkResponse.clone());
+          cache.put(event.request, responseToCache);
         });
+
         return networkResponse;
+      }).catch(() => {
+        // Fallback or error handling if network fails
       });
-      return cachedResponse || fetchPromise;
     })
   );
 });
