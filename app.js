@@ -23,6 +23,7 @@ const historyData = {
 };
 
 function init() {
+    Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIxODFlMDBiNi03YjczLTQ0NTktYTc2NC0zOWZmNmNkMGI1Y2IiLCJpZCI6NDE4Nzk3LCJpYXQiOjE3NzYyOTg3NzB9.NmepN73zX_Q92R-xQGLg7thmoCOcaNT1Szmplv_W7Hc';
     const status = document.getElementById('status-text');
     
     // Safety check for Cesium library
