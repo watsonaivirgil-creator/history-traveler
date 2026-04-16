@@ -1,5 +1,5 @@
-/* CHRONO-OS SERVICE WORKER v2.9.2 */
-const CACHE_NAME = 'chrono-os-v2.9.2';
+/* CHRONO-LINK SERVICE WORKER v3.1 */
+const CACHE_NAME = 'chrono-link-cache-v3';
 const ASSETS = [
   '/',
   '/index.html',
@@ -7,29 +7,31 @@ const ASSETS = [
   '/manifest.json'
 ];
 
+// Install Event
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.addAll(ASSETS);
+    })
   );
 });
 
+// Fetch Event - The Fix is Here
 self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
-      // Return from cache if found
       if (cachedResponse) {
         return cachedResponse;
       }
 
-      // Otherwise fetch from network
       return fetch(event.request).then((networkResponse) => {
-        // Only cache valid, same-origin responses
+        // 1. Check if the response is valid
         if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
           return networkResponse;
         }
 
-        // CRITICAL FIX: Clone the response immediately. 
-        // One is for the browser, one is for the cache.
+        // 2. CRITICAL FIX: Clone the response BEFORE it is consumed
+        // We create a copy so one can go to the cache and one to the browser
         const responseToCache = networkResponse.clone();
 
         caches.open(CACHE_NAME).then((cache) => {
@@ -38,12 +40,13 @@ self.addEventListener('fetch', (event) => {
 
         return networkResponse;
       }).catch(() => {
-        // Fallback or error handling if network fails
+        // Fallback if network fails and not in cache
       });
     })
   );
 });
 
+// Activate Event (Cleanup old caches)
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
