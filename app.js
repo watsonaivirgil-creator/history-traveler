@@ -1,4 +1,4 @@
-/* CHRONO-OS APP LOGIC v2.9.4 - Final Syntax Check */
+/* CHRONO-OS APP LOGIC v3.1 */
 let viewer;
 let currentSiteKey = "";
 
@@ -23,7 +23,7 @@ const historyData = {
 async function init() {
     const status = document.getElementById('status-text');
     
-    // Using your provided token
+    // Using your active token from the logs
     Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI3NzJkN2MzNy02Mjk2LTQ4ODMtOWMxMC0zODdmM2UwYjI5N2UiLCJpZCI6NDE4Nzk3LCJpYXQiOjE3NzYyOTg1NjV9.8obaJxAuSLsIW4_7NlGMwQORhcYgynoHjeVJGknTuI4';
 
     try {
@@ -40,15 +40,15 @@ async function init() {
             requestRenderMode: true
         });
 
-        // Load Buildings
+        // Load Buildings Asynchronously
         try {
             const buildingTileset = await Cesium.createOsmBuildingsAsync();
             viewer.scene.primitives.add(buildingTileset);
         } catch (err) {
-            console.error("Buildings failed to load.");
+            console.error("Buildings failed to load. Check Ion Token.");
         }
 
-        // Spawn Points
+        // Spawn Entities
         Object.keys(historyData).forEach(key => {
             const site = historyData[key];
             viewer.entities.add({
@@ -63,11 +63,12 @@ async function init() {
             });
         });
 
-        // Click Logic
+        // Click Handler
         viewer.screenSpaceEventHandler.setInputAction((movement) => {
             const picked = viewer.scene.pick(movement.position);
             if (picked && picked.id && historyData[picked.id.id]) {
-                const site = historyData[picked.id.id];
+                currentSiteKey = picked.id.id;
+                const site = historyData[currentSiteKey];
                 openSidebar(site);
                 viewer.camera.flyTo({ 
                     destination: Cesium.Cartesian3.fromDegrees(site.lon, site.lat, 1000), 
@@ -80,11 +81,11 @@ async function init() {
 
     } catch (e) {
         status.innerText = "SYSTEM ERROR";
-        console.error("Init failed:", e);
+        console.error(e);
     }
 }
 
-// Global scope attachments
+// Global scope attachments for HTML
 window.flyToRegion = function(region) {
     const targets = {
         'Egypt': { lon: 31.13, lat: 29.97, alt: 500000 },
@@ -100,38 +101,34 @@ window.flyToRegion = function(region) {
 
 function openSidebar(site) {
     const msgArea = document.getElementById('chat-messages');
-    if (!msgArea) return;
-
     document.getElementById('location-name').innerText = site.name;
     msgArea.innerHTML = `<img src="${site.img}" class="site-image" onerror="this.src='https://via.placeholder.com/300x150/111/gold?text=ARCHIVE+IMAGE'"><p>${site.baseFact}</p><div id="branch-container"></div>`;
     
-    site.branches.forEach(branch => {
-        const btn = document.createElement('button');
-        btn.className = 'branch-btn';
-        btn.innerText = branch.label;
-        btn.onclick = () => {
-            msgArea.innerHTML += `<p style="color:white; margin-top:10px; border-top: 1px solid #333; padding-top:10px;"><strong>Query:</strong> ${branch.label}</p><p><strong>Guide:</strong> ${branch.text}</p>`;
-            msgArea.scrollTop = msgArea.scrollHeight;
-        };
-        document.getElementById('branch-container').appendChild(btn);
-    });
+    if (site.branches) {
+        site.branches.forEach(branch => {
+            const btn = document.createElement('button');
+            btn.className = 'branch-btn';
+            btn.innerText = branch.label;
+            btn.onclick = () => {
+                msgArea.innerHTML += `<p style="color:white; margin-top:10px; border-top: 1px solid #333; padding-top:10px;"><strong>Query:</strong> ${branch.label}</p><p><strong>Guide:</strong> ${branch.text}</p>`;
+                msgArea.scrollTop = msgArea.scrollHeight;
+            };
+            document.getElementById('branch-container').appendChild(btn);
+        });
+    }
     document.getElementById('chat-sidebar').style.right = "0px";
 }
 
-window.closeSidebar = function() {
-    const sidebar = document.getElementById('chat-sidebar');
-    if (sidebar) sidebar.style.right = "-400px";
-};
+window.closeSidebar = function() { document.getElementById('chat-sidebar').style.right = "-400px"; };
 
 window.sendMessage = function() {
     const input = document.getElementById('user-input');
     const msgArea = document.getElementById('chat-messages');
-    if (input && input.value.trim() !== "") {
+    if (input.value.trim() !== "") {
         msgArea.innerHTML += `<p style="color:white; margin-top:10px;"><strong>You:</strong> ${input.value}</p>`;
         input.value = "";
         msgArea.scrollTop = msgArea.scrollHeight;
     }
 };
 
-// Start application
 window.onload = init;
