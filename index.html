@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chrono-Link v2.6.2</title>
+    <link rel="manifest" href="manifest.json">
     
     <link href="https://cesium.com/downloads/cesiumjs/releases/1.105/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
     <script src="https://cesium.com/downloads/cesiumjs/releases/1.105/Build/Cesium/Cesium.js"></script>
@@ -16,12 +17,10 @@
             position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); 
             z-index: 100; display: flex; gap: 10px; background: rgba(0,0,0,0.85); 
             padding: 10px; border: 1px solid #D4AF37; border-radius: 50px;
-            box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
         }
         .nav-btn { 
             background: none; border: 1px solid #444; color: #aaa; padding: 8px 15px; 
-            border-radius: 20px; cursor: pointer; font-size: 10px; text-transform: uppercase; 
-            letter-spacing: 1px; transition: 0.3s;
+            border-radius: 20px; cursor: pointer; font-size: 10px; text-transform: uppercase; transition: 0.3s;
         }
         .nav-btn:hover { border-color: gold; color: gold; background: rgba(212, 175, 55, 0.1); }
 
@@ -33,19 +32,15 @@
         }
         #chat-header { padding: 20px; border-bottom: 1px solid #D4AF37; background: #111; font-weight: bold; }
         #chat-messages { flex-grow: 1; padding: 15px; overflow-y: auto; font-size: 0.95em; line-height: 1.6; }
-        
         #branch-container { margin-top: 15px; display: flex; flex-wrap: wrap; gap: 8px; }
-        .branch-btn { background: #1a1a1a; border: 1px solid #D4AF37; color: gold; padding: 6px 10px; cursor: pointer; font-size: 10px; border-radius: 2px; }
-        .branch-btn:hover { background: gold; color: #000; }
-
-        .site-image { width: 100%; border-radius: 2px; margin-bottom: 15px; border: 1px solid #444; min-height: 100px; background: #222; }
+        .branch-btn { background: #1a1a1a; border: 1px solid #D4AF37; color: gold; padding: 6px 10px; cursor: pointer; font-size: 10px; }
+        .site-image { width: 100%; border-radius: 2px; margin-bottom: 15px; border: 1px solid #444; background: #222; }
         
         #chat-input-area { padding: 15px; background: #050505; border-top: 1px solid #222; display: flex; }
         input { background: #111; border: 1px solid #333; color: gold; padding: 12px; flex-grow: 1; outline: none; }
         button#send-btn { background: #D4AF37; color: black; border: none; padding: 0 15px; cursor: pointer; font-weight: bold; }
         
         #status-overlay { position: absolute; top: 20px; left: 20px; z-index: 100; background: rgba(0,0,0,0.85); padding: 8px 15px; border-left: 3px solid #D4AF37; font-size: 11px; }
-        .close-link { background: none; color: #666; border: none; padding: 15px; cursor: pointer; font-size: 10px; text-transform: uppercase; }
     </style>
 </head>
 <body>
@@ -66,11 +61,22 @@
             <input type="text" id="user-input" placeholder="Query data...">
             <button id="send-btn" onclick="sendMessage()">SEND</button>
         </div>
-        <button onclick="closeSidebar()" class="close-link">[ Disconnect ]</button>
+        <button onclick="closeSidebar()" style="background:none; color:#666; border:none; padding:15px; cursor:pointer; font-size:10px;">[ DISCONNECT ]</button>
     </div>
 
     <div id="map-container"></div>
 
     <script src="app.js"></script>
+
+    <script>
+        // PWA SERVICE WORKER REGISTRATION
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('Sync: Active'))
+                    .catch(err => console.log('Sync: Offline Only', err));
+            });
+        }
+    </script>
 </body>
 </html>
